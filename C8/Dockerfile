@@ -33,7 +33,7 @@ ENV PGUSER=dbadm
 ENV PGDBNAME=demo
 ENV PGMD5PW=md5c4b131c8a66d914edbadb5b49c52b45f
 
-ENV LANG en_ZA.utf8
+#ENV LANG en_ZA.utf8
 
 VOLUME  [$PGDATADIR]
 EXPOSE $PGPORT
@@ -106,7 +106,7 @@ RUN pg_ctl -s -D $PGDATADIR start -w -t 120 -l $PGLOGFILE &&\
     psql --dbname $PGDBNAME -f /prep/dbsetup.pgsql ||\
     echo -e "\e[0;33m Database setup file failed.  \e[0m" 
 
-HEALTHCHECK CMD pg_ctl status -D $PGDATADIR
+#HEALTHCHECK CMD pg_ctl status -D $PGDATADIR
 
 COPY entrypoint.sh /usr/local/bin/
 
