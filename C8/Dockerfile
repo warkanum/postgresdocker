@@ -24,6 +24,7 @@ ARG PGCFG="/etc/pg12"
 ARG PYSRC="https://www.python.org/ftp/python/3.6.9/Python-3.6.9.tgz"
 ARG PYDIR="/opt/python3"
 
+ENV PG_MAJOR 12
 ENV PGDATADIR="/data"
 ENV PGLOGFILE="/data/error.log"
 ENV PGPORT=5433
@@ -31,6 +32,8 @@ ENV RUNUUSER=dbadm
 ENV PGUSER=dbadm
 ENV PGDBNAME=demo
 ENV PGMD5PW=md5c4b131c8a66d914edbadb5b49c52b45f
+
+ENV LANG en_ZA.utf8
 
 VOLUME  [$PGDATADIR]
 EXPOSE $PGPORT
@@ -42,8 +45,8 @@ RUN echo -e "\e[0;33mStarting Compile Process \e[0m"
 RUN mkdir -p /prep
 
 #py
-#RUN wget -c ${PYSRC} -O /prep/py.tar.gz
-COPY Python-3.6.9.tgz /prep/py.tgz
+RUN wget -c ${PYSRC} -O /prep/py.tgz
+#COPY Python-3.6.9.tgz /prep/py.tgz #for local testing
 RUN mkdir -p /usr/src/python
 RUN tar xfz /prep/py.tgz --strip-components 1 -C /usr/src/python
 WORKDIR /usr/src/python
@@ -61,8 +64,8 @@ RUN $PYDIR/bin/python3 /prep/test_python.py
 RUN echo -e "\e[0;33mPython installed to $PYDIR \e[0m"
 
 #pg
-#RUN wget -c ${PGSRC} -O /prep/pg.tar.gz
-COPY postgresql-12.1.tar.gz /prep/pg.tar.gz
+RUN wget -c ${PGSRC} -O /prep/pg.tar.gz
+#COPY postgresql-12.1.tar.gz /prep/pg.tar.gz #for local testing
 RUN mkdir -p /usr/src/postgres
 RUN tar xfz /prep/pg.tar.gz --strip-components 1 -C /usr/src/postgres
 
@@ -103,5 +106,9 @@ RUN pg_ctl -s -D $PGDATADIR start -w -t 120 -l $PGLOGFILE &&\
     psql --dbname $PGDBNAME -f /prep/dbsetup.pgsql ||\
     echo -e "\e[0;33m Database setup file failed.  \e[0m" 
 
+HEALTHCHECK CMD pg_ctl status -D $PGDATADIR
 
-CMD pg_ctl start -D $PGDATADIR -w -t 120 -l $PGLOGFILE -s
+COPY entrypoint.sh /usr/local/bin/
+
+ENTRYPOINT ["entrypoint.sh"]
+CMD pg_ctl start -D $PGDATADIR -w -t 120 -l $PGLOGFILE
