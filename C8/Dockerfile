@@ -26,7 +26,7 @@ ARG PGCFG="/etc/pg12"
 ARG PYSRC="https://www.python.org/ftp/python/3.6.9/Python-3.6.9.tgz"
 ARG PYDIR="/opt/python3"
 
-ENV PG_MAJOR 12 \
+ENV PG_MAJOR=12 \
     PGDATADIR="/data"  \
     PGLOGFILE="/data/error.log"  \
     PGPORT=5433  \
@@ -43,7 +43,6 @@ EXPOSE $PGPORT
 
 RUN useradd -m -G users $DUSER
 
-
 ##Prep for compile##
 RUN echo -e "\e[0;33mStarting Download and Extract \e[0m" &&\
   mkdir -p /prep &&\
@@ -57,7 +56,7 @@ RUN echo -e "\e[0;33mStarting Download and Extract \e[0m" &&\
 
 #Copy outside files.
 COPY test_python.py /prep/test_python.py
-COPY entrypoint.sh /usr/local/bin/
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY dbsetup.pgsql /prep/dbsetup.pgsql
 
 RUN echo -e "\e[0;33mStarting Compile Process \e[0m"
@@ -112,5 +111,5 @@ RUN pg_ctl -s -D $PGDATADIR start -w -t 120 -l $PGLOGFILE &&\
 
 #HEALTHCHECK CMD pg_ctl status -D $PGDATADIR
 
-ENTRYPOINT ["entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD pg_ctl start -D $PGDATADIR -w -t 120 -l $PGLOGFILE
