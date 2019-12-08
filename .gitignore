@@ -1,0 +1,4 @@
+*.tag.gz
+*.tgz
+
+C8/*.tar.gz
