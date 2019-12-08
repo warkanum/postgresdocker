@@ -59,8 +59,8 @@ ENV PATH=$PYDIR/lib:$PATH
 
 RUN echo $PYDIR/lib > /etc/ld.so.conf.d/dockerpython.conf
 RUN ldconfig
-COPY test_python.py /prep/test_python.py
-RUN $PYDIR/bin/python3 /prep/test_python.py
+#COPY test_python.py /prep/test_python.py
+#RUN $PYDIR/bin/python3 /prep/test_python.py
 RUN echo -e "\e[0;33mPython installed to $PYDIR \e[0m"
 
 #pg
