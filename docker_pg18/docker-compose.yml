@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  pgsql18:
+    container_name: pgsql18
+    image: warkypublic/pgsql18
+    build:
+      context: .
+      dockerfile: Dockerfile
+    user: "${DOCKER_UID}:${DOCKER_GID}"
+    ports:
+      - "5403:5432"
+    volumes:
+      - /tmp/pgsql18_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    restart: unless-stopped
+    shm_size: 8g
+    deploy:
+      resources:
+        limits:
+          memory: 10G
+          cpus: '4'
