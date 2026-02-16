@@ -1,16 +1,16 @@
 version: '3.8'
 
 services:
-  pgsql18:
-    container_name: pgsql18
-    image: warkypublic/pgsql18
+  postgresql18_za:
+    container_name: postgresql18_za
+    image: docker.io/warkanum/postgresql18_za
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "5403:5432"
     volumes:
-      - /tmp/pgsql18_data:/var/lib/postgresql
+      - /tmp/postgresql18_za_data:/var/lib/postgresql
     env_file:
       - .env
     restart: unless-stopped

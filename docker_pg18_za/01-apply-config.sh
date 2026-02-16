@@ -10,6 +10,9 @@ mkdir -p "$PGDATA/conf.d"
 if [ -f /etc/postgresql/custom.conf ]; then
     cp /etc/postgresql/custom.conf "$PGDATA/conf.d/custom.conf"
     echo "Custom config copied to $PGDATA/conf.d/custom.conf"
+else
+    echo "ERROR: /etc/postgresql/custom.conf not found in image! Rebuild without cache."
+    exit 1
 fi
 
 # Ensure SSL certificates exist in data directory
@@ -31,7 +34,11 @@ if [ ! -d "$SSL_DIR" ]; then
 fi
 
 # Update SSL paths in config to use data directory
-sed -i "s|/var/lib/postgresql/ssl|$PGDATA/ssl|g" "$PGDATA/conf.d/custom.conf"
+if [ -f "$PGDATA/conf.d/custom.conf" ]; then
+    sed -i "s|/var/lib/postgresql/ssl|$PGDATA/ssl|g" "$PGDATA/conf.d/custom.conf"
+else
+    echo "Warning: $PGDATA/conf.d/custom.conf not found, skipping SSL path update"
+fi
 
 # Add include_dir directive to postgresql.conf
 echo "include_dir = 'conf.d'" >> "$PGDATA/postgresql.conf"
@@ -44,5 +51,5 @@ if [ -f /etc/postgresql/pg_hba.conf ]; then
 fi
 
 echo "Configuration setup complete"
-# Restart to apply shared_preload_libraries
+# Restart to apply shared_preload_libraries (required before extension creation)
 pg_ctl -D "$PGDATA" -m fast -w restart

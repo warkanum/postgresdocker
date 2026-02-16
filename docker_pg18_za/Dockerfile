@@ -1,13 +1,12 @@
 # Use the official PostgreSQL image with Alpine Linux as the base image
-FROM postgres:18-alpine as pgdocker-base
+FROM docker.io/library/postgres:18-alpine as pgdocker-base
 
 # Set the timezone to Africa/Johannesburg
-ENV TZ Africa/Johannesburg
-
+ENV TZ=Africa/Johannesburg
 
 # Set the locale to en_ZA.utf8 directly in the environment variables
-ENV LANG en_ZA.utf8
-ENV LC_ALL en_ZA.utf8
+ENV LANG=en_ZA.utf8
+ENV LC_ALL=en_ZA.utf8
 
 # Install additional extensions and dependencies
 RUN apk add --no-cache \
@@ -36,14 +35,8 @@ RUN apk add --no-cache \
     protobuf-c-dev \
     libxml2-dev \
     openssl \
-    && apk add --no-cache --virtual .build-deps \
-    build-base \
-    python3-dev \
-    musl-dev \
     musl-locales \
-    tzdata \
-    && apk del .build-deps \
-    && rm -rf /var/cache/apk/*
+    tzdata
 
 # Install pgvector extension (main branch for PG18 compatibility)
 RUN mkdir -p /usr/lib/llvm19/bin \
@@ -133,12 +126,20 @@ RUN apk add --no-cache boost-dev \
     && cd / \
     && rm -rf /tmp/pgrouting
 
-RUN apk add python3-dev g++ gcc unixodbc-dev unixodbc musl-dev freetds-dev freetds
+RUN apk add --no-cache python3-dev g++ gcc unixodbc-dev unixodbc musl-dev freetds-dev freetds
 
-
-RUN apk add py3-html5lib py3-beautifulsoup4 py3-numpy py3-paramiko py3-psycopg2 py3-openssl py3-pypdf \
+RUN apk add --no-cache py3-html5lib py3-beautifulsoup4 py3-numpy py3-paramiko py3-psycopg2 py3-openssl py3-pypdf \
     py3-yaml py3-urllib3 py3-reportlab py3-mimeparse py3-num2words py3-rsa py3-pillow py3-openpyxl py3-lxml \
     py3-pycryptodome py3-requests py3-psutil
+
+# Install the plv8 extension (v3.2.4)
+# RUN cd /tmp \
+#     && git clone --branch v3.2.4 --depth 1 https://github.com/plv8/plv8.git \
+#     && cd plv8 \
+#     && make \
+#     && make install \
+#     && cd / \
+#     && rm -rf /tmp/plv8
 
 FROM pgdocker-base
 
@@ -151,19 +152,6 @@ RUN deluser postgres && \
     mkdir -p /var/lib/postgresql /var/run/postgresql && \
     chown -R postgres:postgres /var/lib/postgresql /var/run/postgresql && \
     chmod 775 /var/run/postgresql
-
-# Install the v8 extension
-#RUN apk add --no-cache \
-#    postgresql-v8
-# RUN wget https://github.com/plv8/plv8/archive/v2.3.0.tar.gz \
-#     && tar -xvzf v2.3.0.tar.gz \
-#     && cd plv8-2.3.0 \
-#     && make \
-#     && make install \
-#     && cd .. \
-#     && rm -rf plv8-2.3.0 v2.3.0.tar.gz \
-#     && apk del .build-deps \
-#     && rm -rf /var/cache/apk/*
 
 
 # Create Python virtual environment (outside data volume so it persists)
@@ -181,10 +169,10 @@ ENV PATH="/opt/python_env/bin:$PATH"
 ENV PYTHONPATH=/opt/python_env/lib/python3.12/site-packages
 
 
-# Set environment variables for PostgreSQL
-ENV POSTGRES_USER=${POSTGRES_USER:-postgres}
-ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
-ENV POSTGRES_DB=${POSTGRES_DB:-postgres}
+# Set environment variables for PostgreSQL (defaults from official image, override via docker-compose)
+ENV POSTGRES_USER=postgres
+ENV POSTGRES_PASSWORD=password
+ENV POSTGRES_DB=postgres
 
 # Initialize the data directory if not initialized
 #COPY init-db.sh /docker-entrypoint-initdb.d/init-db.sh
@@ -220,7 +208,6 @@ RUN /usr/local/bin/generate-ssl-certs.sh /etc/ssl/postgresql && \
 COPY 01-apply-config.sh /docker-entrypoint-initdb.d/00-00-apply-config.sh
 RUN chmod +x /docker-entrypoint-initdb.d/00-00-apply-config.sh
 
-RUN chown postgres:postgres -R /etc/ssl/postgresql
 RUN chown postgres:postgres -R /var/run/postgresql
 # Expose the PostgreSQL port
 EXPOSE 5432

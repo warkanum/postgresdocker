@@ -17,7 +17,7 @@ psql -v --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
     CREATE USER "$POSTGRES_USER" WITH PASSWORD '$POSTGRES_PASSWORD';
 
     -- Create a database
-    CREATE DATABASE "$POSTGRES_DB" ENCODING 'UTF-8' LC_COLLATE='en_US.utf8' LC_CTYPE='en_US.utf8' TEMPLATE=template0;
+    CREATE DATABASE "$POSTGRES_DB" ENCODING 'UTF-8' LC_COLLATE='en_ZA.utf8' LC_CTYPE='en_ZA.utf8' TEMPLATE=template0;
 
     -- Grant necessary privileges to the user
     ALTER USER "$POSTGRES_USER" CREATEDB SUPERUSER;

@@ -9,7 +9,7 @@ DOCKERNAME=${1:-pgsql18}
 
 echo "Building and running Docker container: $DOCKERNAME"
 
-docker build . -t warkypublic/$DOCKERNAME
+docker build --build-arg DOCKER_UID=${DOCKER_UID:-1000} --build-arg DOCKER_GID=${DOCKER_GID:-1000} -t warkypublic/$DOCKERNAME .
 docker stop $DOCKERNAME
 docker rm $DOCKERNAME
 mkdir -p /tmp/pgsql18_data
