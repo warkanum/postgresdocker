@@ -35,6 +35,7 @@ RUN apk add --no-cache \
     json-c-dev \
     protobuf-c-dev \
     libxml2-dev \
+    openssl \
     && apk add --no-cache --virtual .build-deps \
     build-base \
     python3-dev \
@@ -148,7 +149,8 @@ RUN deluser postgres && \
     addgroup -g ${DOCKER_GID} postgres && \
     adduser -D -u ${DOCKER_UID} -G postgres postgres && \
     mkdir -p /var/lib/postgresql /var/run/postgresql && \
-    chown -R postgres:postgres /var/lib/postgresql /var/run/postgresql
+    chown -R postgres:postgres /var/lib/postgresql /var/run/postgresql && \
+    chmod 775 /var/run/postgresql
 
 # Install the v8 extension
 #RUN apk add --no-cache \
@@ -206,10 +208,20 @@ VOLUME /var/lib/postgresql
 COPY custom.conf /etc/postgresql/custom.conf
 COPY pg_hba.conf /etc/postgresql/pg_hba.conf
 
+# Copy SSL certificate generation script
+COPY generate-ssl-certs.sh /usr/local/bin/generate-ssl-certs.sh
+RUN chmod +x /usr/local/bin/generate-ssl-certs.sh
+
+# Generate SSL certificates at build time in non-volume location
+RUN /usr/local/bin/generate-ssl-certs.sh /etc/ssl/postgresql && \
+    chown -R postgres:postgres /etc/ssl/postgresql
+
 # Copy init script that applies config on first startup (runs before extensions)
 COPY 01-apply-config.sh /docker-entrypoint-initdb.d/00-00-apply-config.sh
 RUN chmod +x /docker-entrypoint-initdb.d/00-00-apply-config.sh
 
+RUN chown postgres:postgres -R /etc/ssl/postgresql
+RUN chown postgres:postgres -R /var/run/postgresql
 # Expose the PostgreSQL port
 EXPOSE 5432
 

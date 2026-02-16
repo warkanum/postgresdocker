@@ -13,7 +13,6 @@ docker build . -t warkypublic/$DOCKERNAME
 docker stop $DOCKERNAME
 docker rm $DOCKERNAME
 mkdir -p /tmp/pgsql18_data
-chmod 777 /tmp/pgsql18_data
-docker run -d -p 5403:5432 --user ${DOCKER_UID}:${DOCKER_GID} --shm-size=8g -v /tmp/pgsql18_data:/var/lib/postgresql --env-file ./.env --name $DOCKERNAME --restart unless-stopped --memory=10G --cpus=4  warkypublic/$DOCKERNAME
+docker run -d -p 5403:5432 --shm-size=8g -v /tmp/pgsql18_data:/var/lib/postgresql --env-file ./.env --name $DOCKERNAME --restart unless-stopped --memory=10G --cpus=4  warkypublic/$DOCKERNAME
 
 
