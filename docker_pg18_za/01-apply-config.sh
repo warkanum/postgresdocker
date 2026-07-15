@@ -37,6 +37,16 @@ else
     echo "Warning: $PGDATA/conf.d/custom.conf not found, skipping SSL path update"
 fi
 
+# Keep pg_cron aligned with the database created by the official entrypoint.
+if [ -f "$PGDATA/conf.d/custom.conf" ]; then
+    if grep -Eq "^[[:space:]]*cron\\.database_name[[:space:]]*=" "$PGDATA/conf.d/custom.conf"; then
+        sed -i "s|^[[:space:]]*cron\\.database_name[[:space:]]*=.*|cron.database_name = '${POSTGRES_DB}'|" "$PGDATA/conf.d/custom.conf"
+    else
+        printf "\ncron.database_name = '%s'\n" "$POSTGRES_DB" >> "$PGDATA/conf.d/custom.conf"
+    fi
+    echo "Configured pg_cron metadata database: ${POSTGRES_DB}"
+fi
+
 # Add include_dir directive to postgresql.conf once, with valid quoting.
 if grep -Eq "^[[:space:]]*include_dir[[:space:]]*=[[:space:]]*'conf\\.d'[[:space:]]*$" "$PGDATA/postgresql.conf"; then
     echo "include_dir directive already present in postgresql.conf"

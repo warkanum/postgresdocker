@@ -76,13 +76,16 @@ Runtime settings in `Makefile`:
 | TimescaleDB | Time-series data |
 | pg_search | ParadeDB BM25 search |
 | pg_textsearch | BM25 full-text search |
+| pg_jsonschema | JSON Schema validation for json/jsonb |
 | pg_stat_statements | Query statistics |
+| pg_cron | In-database job scheduler |
+| pg_qualstats | Predicate statistics for index tuning |
 | pgaudit | Audit logging |
 | pg_partman | Partition management |
+| pg_background | Run SQL in background workers |
 | pg_repack | Online table repacking |
 | pgsql-http | HTTP client |
 | plpython3u | Python 3 stored procedures |
-| plv8 | JavaScript stored procedures |
 | pgcrypto | Cryptographic functions |
 | uuid-ossp | UUID generation |
 | pg_trgm | Trigram matching |
@@ -90,8 +93,13 @@ Runtime settings in `Makefile`:
 | fuzzystrmatch | Fuzzy string matching |
 | citext | Case-insensitive text |
 | btree_gist / btree_gin | Additional index types |
+| amcheck | Index and heap consistency checks |
+| pgstattuple | Table and index bloat statistics |
 | postgres_fdw | Foreign data wrapper |
 | unaccent | Accent removal |
+
+See [Extentions.md](/home/warkanum/dev/postgresdocker/docker_pg18_za/Extentions.md) for a fuller description of every installed extension and when to use it.
+`plv8` remains commented out in the Dockerfile and is not currently built into the image.
 
 ## SSL
 

@@ -5,6 +5,7 @@ FROM docker.io/library/postgres:18-alpine as pgdocker-base
 ARG PG_SEARCH_VERSION=0.24.2
 ARG PG_TEXTSEARCH_VERSION=1.3.1
 ARG CARGO_PGRX_VERSION=0.18.1
+ARG PG_JSONSCHEMA_PGRX_VERSION=0.16.1
 
 # Set the timezone to Africa/Johannesburg
 ENV TZ=Africa/Johannesburg
@@ -95,6 +96,16 @@ RUN apk add --no-cache curl-dev \
     && cd / \
     && rm -rf /tmp/pgsql-http
 
+# Install pg_cron extension
+RUN apk add --no-cache gettext-dev \
+    && cd /tmp \
+    && git clone https://github.com/citusdata/pg_cron.git \
+    && cd pg_cron \
+    && make \
+    && make install \
+    && cd / \
+    && rm -rf /tmp/pg_cron
+
 # Install pg_partman extension
 RUN cd /tmp \
     && git clone https://github.com/pgpartman/pg_partman.git \
@@ -136,6 +147,24 @@ RUN apk add --no-cache boost-dev \
     && cd / \
     && rm -rf /tmp/pgrouting
 
+# Install pg_qualstats extension
+RUN cd /tmp \
+    && git clone https://github.com/powa-team/pg_qualstats.git \
+    && cd pg_qualstats \
+    && make \
+    && make install \
+    && cd / \
+    && rm -rf /tmp/pg_qualstats
+
+# Install pg_background extension
+RUN cd /tmp \
+    && git clone https://github.com/vibhorkum/pg_background.git \
+    && cd pg_background \
+    && make \
+    && make install \
+    && cd / \
+    && rm -rf /tmp/pg_background
+
 RUN apk add --no-cache python3-dev g++ gcc unixodbc-dev unixodbc musl-dev freetds-dev freetds
 
 RUN apk add --no-cache py3-html5lib py3-beautifulsoup4 py3-numpy py3-paramiko py3-psycopg2 py3-openssl py3-pypdf \
@@ -156,6 +185,7 @@ FROM pgdocker-base as pgdocker-ext-builder
 ARG PG_SEARCH_VERSION
 ARG PG_TEXTSEARCH_VERSION
 ARG CARGO_PGRX_VERSION
+ARG PG_JSONSCHEMA_PGRX_VERSION
 
 ENV LIBCLANG_PATH=/usr/lib/llvm21/lib
 
@@ -179,6 +209,16 @@ RUN cargo install --locked cargo-pgrx --version "${CARGO_PGRX_VERSION}" \
     && cargo pgrx install --package pg_search --release --pg-config /usr/local/bin/pg_config \
     && cd / \
     && rm -rf /tmp/paradedb /root/.cargo/registry /root/.cargo/git /root/.rustup /root/.pgrx
+
+# Build pg_jsonschema with the pgrx toolchain version it targets.
+RUN cargo install --locked cargo-pgrx --version "${PG_JSONSCHEMA_PGRX_VERSION}" --force \
+    && cd /tmp \
+    && git clone https://github.com/supabase/pg_jsonschema.git \
+    && cd pg_jsonschema \
+    && cargo pgrx init --pg18=/usr/local/bin/pg_config \
+    && cargo pgrx install --release --features pg18 --pg-config /usr/local/bin/pg_config \
+    && cd / \
+    && rm -rf /tmp/pg_jsonschema /root/.cargo/registry /root/.cargo/git /root/.rustup /root/.pgrx
 
 FROM pgdocker-base
 
@@ -216,8 +256,10 @@ ENV POSTGRES_DB=postgres
 # Copy externally built search extensions into the final image.
 COPY --from=pgdocker-ext-builder /usr/local/lib/postgresql/pg_search* /usr/local/lib/postgresql/
 COPY --from=pgdocker-ext-builder /usr/local/lib/postgresql/pg_textsearch* /usr/local/lib/postgresql/
+COPY --from=pgdocker-ext-builder /usr/local/lib/postgresql/pg_jsonschema* /usr/local/lib/postgresql/
 COPY --from=pgdocker-ext-builder /usr/local/share/postgresql/extension/pg_search* /usr/local/share/postgresql/extension/
 COPY --from=pgdocker-ext-builder /usr/local/share/postgresql/extension/pg_textsearch* /usr/local/share/postgresql/extension/
+COPY --from=pgdocker-ext-builder /usr/local/share/postgresql/extension/pg_jsonschema* /usr/local/share/postgresql/extension/
 
 # Initialize the data directory if not initialized
 #COPY init-db.sh /docker-entrypoint-initdb.d/init-db.sh
