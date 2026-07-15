@@ -17,20 +17,17 @@ fi
 
 # Ensure SSL certificates exist in data directory
 SSL_DIR="$PGDATA/ssl"
-if [ ! -d "$SSL_DIR" ]; then
-    echo "Creating SSL directory at $SSL_DIR..."
-    mkdir -p "$SSL_DIR"
-    
-    # Copy SSL certificates from build-time location if they exist
-    if [ -f /etc/ssl/postgresql/server.crt ] && [ -f /etc/ssl/postgresql/server.key ]; then
-        cp /etc/ssl/postgresql/server.crt "$SSL_DIR/server.crt"
-        cp /etc/ssl/postgresql/server.key "$SSL_DIR/server.key"
-        chmod 600 "$SSL_DIR/server.key"
-        chmod 644 "$SSL_DIR/server.crt"
-        echo "SSL certificates copied to data directory"
-    else
-        echo "Warning: SSL certificates not found at build-time location"
-    fi
+mkdir -p "$SSL_DIR"
+
+# Copy SSL certificates from build-time location if they exist
+if [ -f /etc/ssl/postgresql/server.crt ] && [ -f /etc/ssl/postgresql/server.key ]; then
+    cp /etc/ssl/postgresql/server.crt "$SSL_DIR/server.crt"
+    cp /etc/ssl/postgresql/server.key "$SSL_DIR/server.key"
+    chmod 600 "$SSL_DIR/server.key"
+    chmod 644 "$SSL_DIR/server.crt"
+    echo "SSL certificates copied to data directory"
+else
+    echo "Warning: SSL certificates not found at build-time location"
 fi
 
 # Update SSL paths in config to use data directory
@@ -40,9 +37,13 @@ else
     echo "Warning: $PGDATA/conf.d/custom.conf not found, skipping SSL path update"
 fi
 
-# Add include_dir directive to postgresql.conf
-echo "include_dir = 'conf.d'" >> "$PGDATA/postgresql.conf"
-echo "Added include_dir directive to postgresql.conf"
+# Add include_dir directive to postgresql.conf once, with valid quoting.
+if grep -Eq "^[[:space:]]*include_dir[[:space:]]*=[[:space:]]*'conf\\.d'[[:space:]]*$" "$PGDATA/postgresql.conf"; then
+    echo "include_dir directive already present in postgresql.conf"
+else
+    printf "\ninclude_dir = 'conf.d'\n" >> "$PGDATA/postgresql.conf"
+    echo "Added include_dir directive to postgresql.conf"
+fi
 
 # Apply pg_hba.conf
 if [ -f /etc/postgresql/pg_hba.conf ]; then

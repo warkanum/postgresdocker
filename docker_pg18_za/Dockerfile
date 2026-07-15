@@ -1,6 +1,11 @@
 # Use the official PostgreSQL image with Alpine Linux as the base image
 FROM docker.io/library/postgres:18-alpine as pgdocker-base
 
+# Pinned extension versions for reproducible builds
+ARG PG_SEARCH_VERSION=0.24.2
+ARG PG_TEXTSEARCH_VERSION=1.3.1
+ARG CARGO_PGRX_VERSION=0.18.1
+
 # Set the timezone to Africa/Johannesburg
 ENV TZ=Africa/Johannesburg
 
@@ -25,6 +30,7 @@ RUN apk add --no-cache \
     clang \
     llvm \
     llvm-dev \
+    gmp-dev \
     geos \
     geos-dev \
     proj \
@@ -39,9 +45,13 @@ RUN apk add --no-cache \
     tzdata
 
 # Install pgvector extension (main branch for PG18 compatibility)
-RUN mkdir -p /usr/lib/llvm19/bin \
-    && for f in /usr/bin/llvm-*; do ln -sf "$f" /usr/lib/llvm19/bin/"$(basename "$f")"; done \
+RUN mkdir -p /usr/lib/llvm19/bin /usr/lib/llvm21/bin \
+    && for f in /usr/bin/llvm-*; do \
+        ln -sf "$f" /usr/lib/llvm19/bin/"$(basename "$f")"; \
+        ln -sf "$f" /usr/lib/llvm21/bin/"$(basename "$f")"; \
+    done \
     && ln -sf /usr/bin/clang /usr/bin/clang-19 \
+    && ln -sf /usr/bin/clang /usr/bin/clang-21 \
     && cd /tmp \
     && git clone https://github.com/pgvector/pgvector.git \
     && cd pgvector \
@@ -97,7 +107,7 @@ RUN cd /tmp \
 # Install pgaudit extension
 RUN apk add --no-cache krb5-dev \
     && cd /tmp \
-    && git clone https://github.com/pgaudit/pgaudit.git \
+    && git clone --branch REL_18_STABLE --depth 1 https://github.com/pgaudit/pgaudit.git \
     && cd pgaudit \
     && make USE_PGXS=1 \
     && make USE_PGXS=1 install \
@@ -141,6 +151,35 @@ RUN apk add --no-cache py3-html5lib py3-beautifulsoup4 py3-numpy py3-paramiko py
 #     && cd / \
 #     && rm -rf /tmp/plv8
 
+FROM pgdocker-base as pgdocker-ext-builder
+
+ARG PG_SEARCH_VERSION
+ARG PG_TEXTSEARCH_VERSION
+ARG CARGO_PGRX_VERSION
+
+ENV LIBCLANG_PATH=/usr/lib/llvm21/lib
+
+RUN apk add --no-cache cargo rust rustfmt clang21-libclang
+
+# Build pg_textsearch against the system PostgreSQL 18 installation.
+RUN cd /tmp \
+    && git clone --branch "v${PG_TEXTSEARCH_VERSION}" --depth 1 https://github.com/timescale/pg_textsearch.git \
+    && cd pg_textsearch \
+    && make PG_CONFIG=/usr/local/bin/pg_config \
+    && make PG_CONFIG=/usr/local/bin/pg_config install \
+    && cd / \
+    && rm -rf /tmp/pg_textsearch
+
+# Build pg_search with pgrx against the system PostgreSQL 18 installation.
+RUN cargo install --locked cargo-pgrx --version "${CARGO_PGRX_VERSION}" \
+    && cd /tmp \
+    && git clone --branch "v${PG_SEARCH_VERSION}" --depth 1 https://github.com/paradedb/paradedb.git \
+    && cd paradedb \
+    && cargo pgrx init --pg18=/usr/local/bin/pg_config \
+    && cargo pgrx install --package pg_search --release --pg-config /usr/local/bin/pg_config \
+    && cd / \
+    && rm -rf /tmp/paradedb /root/.cargo/registry /root/.cargo/git /root/.rustup /root/.pgrx
+
 FROM pgdocker-base
 
 # Remap postgres user to match host user (for proper file permissions)
@@ -173,6 +212,12 @@ ENV PYTHONPATH=/opt/python_env/lib/python3.12/site-packages
 ENV POSTGRES_USER=postgres
 ENV POSTGRES_PASSWORD=password
 ENV POSTGRES_DB=postgres
+
+# Copy externally built search extensions into the final image.
+COPY --from=pgdocker-ext-builder /usr/local/lib/postgresql/pg_search* /usr/local/lib/postgresql/
+COPY --from=pgdocker-ext-builder /usr/local/lib/postgresql/pg_textsearch* /usr/local/lib/postgresql/
+COPY --from=pgdocker-ext-builder /usr/local/share/postgresql/extension/pg_search* /usr/local/share/postgresql/extension/
+COPY --from=pgdocker-ext-builder /usr/local/share/postgresql/extension/pg_textsearch* /usr/local/share/postgresql/extension/
 
 # Initialize the data directory if not initialized
 #COPY init-db.sh /docker-entrypoint-initdb.d/init-db.sh
@@ -211,4 +256,3 @@ RUN chmod +x /docker-entrypoint-initdb.d/00-00-apply-config.sh
 RUN chown postgres:postgres -R /var/run/postgresql
 # Expose the PostgreSQL port
 EXPOSE 5432
-

@@ -1,6 +1,6 @@
 # PostgreSQL 18 Docker Image (ZA)
 
-PostgreSQL 18.2 on Alpine Linux with South African locale (`en_ZA.utf8`), timezone (`Africa/Johannesburg`), SSL, and pre-installed extensions.
+PostgreSQL 18.4 on Alpine Linux with South African locale (`en_ZA.utf8`), timezone (`Africa/Johannesburg`), SSL, and pre-installed extensions. The Dockerfile uses `postgres:18-alpine`, so rebuilds will track newer PostgreSQL 18 patch releases as they become available.
 
 ## Defaults
 
@@ -74,6 +74,8 @@ Runtime settings in `Makefile`:
 | pgvector | Vector similarity search |
 | PostGIS + pgrouting | Geospatial + routing |
 | TimescaleDB | Time-series data |
+| pg_search | ParadeDB BM25 search |
+| pg_textsearch | BM25 full-text search |
 | pg_stat_statements | Query statistics |
 | pgaudit | Audit logging |
 | pg_partman | Partition management |
