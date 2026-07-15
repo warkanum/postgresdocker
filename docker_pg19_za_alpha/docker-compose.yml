@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  postgresql19_za_alpha:
+    container_name: postgresql19_za_alpha
+    image: docker.io/warkanum/postgresql19_za_alpha
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5403:5432"
+    volumes:
+      - /tmp/postgresql19_za_alpha_data:/var/lib/postgresql
+    env_file:
+      - .env
+    restart: unless-stopped
+    shm_size: 8g
+    deploy:
+      resources:
+        limits:
+          memory: 10G
+          cpus: '4'
