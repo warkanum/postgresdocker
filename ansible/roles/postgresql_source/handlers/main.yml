@@ -1,0 +1,17 @@
+---
+- name: Reload systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Restart PostgreSQL through the service manager
+  listen: Restart PostgreSQL
+  ansible.builtin.service:
+    name: "{{ postgresql_service_name }}"
+    state: restarted
+  when: ansible_facts.service_mgr != 'runit'
+
+- name: Restart PostgreSQL through runit
+  listen: Restart PostgreSQL
+  ansible.builtin.command: "sv restart {{ postgresql_service_name }}"
+  changed_when: false
+  when: ansible_facts.service_mgr == 'runit'

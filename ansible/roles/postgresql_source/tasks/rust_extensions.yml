@@ -1,0 +1,50 @@
+---
+- name: Build pg_textsearch
+  ansible.builtin.shell: |
+    set -o pipefail
+    export PATH="$HOME/.cargo/bin:$PATH"
+    rm -rf "{{ pg_textsearch_dir }}"
+    git clone --depth 1 --branch "{{ postgresql_pg_textsearch.ref }}" "{{ postgresql_pg_textsearch.repository }}" "{{ pg_textsearch_dir }}"
+    cd "{{ pg_textsearch_dir }}"
+    make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config
+    make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config install
+  args:
+    executable: /bin/bash
+    creates: "{{ postgresql_install_prefix }}/share/extension/pg_textsearch.control"
+  vars:
+    pg_textsearch_dir: "/usr/local/src/postgresql/extensions/pg_textsearch-{{ postgresql_version }}"
+  notify: Restart PostgreSQL
+
+- name: Build pg_search with cargo-pgrx
+  ansible.builtin.shell: |
+    set -o pipefail
+    export PATH="$HOME/.cargo/bin:$PATH"
+    rm -rf "{{ pg_search_dir }}"
+    cargo install --locked cargo-pgrx --version "{{ postgresql_pgrx_extensions.pg_search.cargo_pgrx_version }}"
+    git clone --depth 1 --branch "{{ postgresql_pgrx_extensions.pg_search.ref }}" "{{ postgresql_pgrx_extensions.pg_search.repository }}" "{{ pg_search_dir }}"
+    cd "{{ pg_search_dir }}"
+    cargo pgrx init --pg{{ postgresql_major }}={{ postgresql_install_prefix }}/bin/pg_config
+    cargo pgrx install --package pg_search --release --pg-config {{ postgresql_install_prefix }}/bin/pg_config
+  args:
+    executable: /bin/bash
+    creates: "{{ postgresql_install_prefix }}/share/extension/pg_search.control"
+  vars:
+    pg_search_dir: "/usr/local/src/postgresql/extensions/pg_search-{{ postgresql_version }}"
+  notify: Restart PostgreSQL
+
+- name: Build pg_jsonschema with cargo-pgrx
+  ansible.builtin.shell: |
+    set -o pipefail
+    export PATH="$HOME/.cargo/bin:$PATH"
+    rm -rf "{{ pg_jsonschema_dir }}"
+    cargo install --locked cargo-pgrx --version "{{ postgresql_pgrx_extensions.pg_jsonschema.cargo_pgrx_version }}" --force
+    git clone --depth 1 --branch "{{ postgresql_pgrx_extensions.pg_jsonschema.ref }}" "{{ postgresql_pgrx_extensions.pg_jsonschema.repository }}" "{{ pg_jsonschema_dir }}"
+    cd "{{ pg_jsonschema_dir }}"
+    cargo pgrx init --pg{{ postgresql_major }}={{ postgresql_install_prefix }}/bin/pg_config
+    cargo pgrx install --release --features pg{{ postgresql_major }} --pg-config {{ postgresql_install_prefix }}/bin/pg_config
+  args:
+    executable: /bin/bash
+    creates: "{{ postgresql_install_prefix }}/share/extension/pg_jsonschema.control"
+  vars:
+    pg_jsonschema_dir: "/usr/local/src/postgresql/extensions/pg_jsonschema-{{ postgresql_version }}"
+  notify: Restart PostgreSQL

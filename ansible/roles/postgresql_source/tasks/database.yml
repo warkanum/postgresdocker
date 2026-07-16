@@ -1,0 +1,41 @@
+---
+- name: Check whether the isolated initial database exists
+  ansible.builtin.command:
+    argv:
+      - "{{ postgresql_install_prefix }}/bin/psql"
+      - --dbname
+      - postgres
+      - --tuples-only
+      - --no-align
+      - --command
+      - "SELECT 1 FROM pg_database WHERE datname = '{{ postgresql_initial_database }}'"
+  become_user: "{{ postgresql_service_user }}"
+  register: postgresql_initial_database_check
+  changed_when: false
+
+- name: Create isolated initial database
+  ansible.builtin.command:
+    argv:
+      - "{{ postgresql_install_prefix }}/bin/createdb"
+      - --maintenance-db
+      - postgres
+      - --owner
+      - "{{ postgresql_service_user }}"
+      - "{{ postgresql_initial_database }}"
+  become_user: "{{ postgresql_service_user }}"
+  when: postgresql_initial_database_check.stdout | trim != '1'
+
+- name: Create enabled extensions in the initial database
+  ansible.builtin.command:
+    argv:
+      - "{{ postgresql_install_prefix }}/bin/psql"
+      - --dbname
+      - "{{ postgresql_initial_database }}"
+      - --set
+      - ON_ERROR_STOP=1
+      - --command
+      - "CREATE EXTENSION IF NOT EXISTS {{ item }}"
+  become_user: "{{ postgresql_service_user }}"
+  loop: "{{ postgresql_extension_names }}"
+  loop_control:
+    label: "{{ item }}"

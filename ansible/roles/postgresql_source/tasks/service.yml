@@ -1,0 +1,103 @@
+---
+- name: Create PostgreSQL service group
+  ansible.builtin.group:
+    name: "{{ postgresql_service_group }}"
+    system: true
+
+- name: Create PostgreSQL service user
+  ansible.builtin.user:
+    name: "{{ postgresql_service_user }}"
+    group: "{{ postgresql_service_group }}"
+    home: "{{ postgresql_service_home }}"
+    create_home: true
+    system: true
+
+- name: Create PostgreSQL data directory
+  ansible.builtin.file:
+    path: "{{ postgresql_data_dir }}"
+    state: directory
+    owner: "{{ postgresql_service_user }}"
+    group: "{{ postgresql_service_group }}"
+    mode: '0700'
+
+- name: Initialize PostgreSQL data directory
+  ansible.builtin.command: "{{ postgresql_install_prefix }}/bin/initdb --pgdata={{ postgresql_data_dir }} --encoding=UTF8"
+  args:
+    creates: "{{ postgresql_data_dir }}/PG_VERSION"
+  become_user: "{{ postgresql_service_user }}"
+
+- name: Configure PostgreSQL listener and port
+  ansible.builtin.lineinfile:
+    path: "{{ postgresql_data_dir }}/postgresql.conf"
+    regexp: "^#?{{ item.key }}\\s*="
+    line: "{{ item.key }} = '{{ item.value }}'"
+  loop:
+    - { key: 'listen_addresses', value: 'localhost' }
+    - { key: 'port', value: '{{ postgresql_port }}' }
+    - { key: 'shared_preload_libraries', value: "{{ postgresql_shared_preload_libraries | join(',') }}" }
+    - { key: 'cron.database_name', value: '{{ postgresql_initial_database }}' }
+  notify: Restart PostgreSQL
+
+- name: Install systemd unit
+  ansible.builtin.template:
+    src: postgresql.service.j2
+    dest: "/etc/systemd/system/{{ postgresql_service_name }}.service"
+    mode: '0644'
+  when: ansible_facts.service_mgr == 'systemd'
+  notify:
+    - Reload systemd
+    - Restart PostgreSQL
+
+- name: Enable and start PostgreSQL systemd service
+  ansible.builtin.systemd_service:
+    name: "{{ postgresql_service_name }}"
+    enabled: true
+    state: started
+  when: ansible_facts.service_mgr == 'systemd'
+
+- name: Install OpenRC unit
+  ansible.builtin.template:
+    src: postgresql.openrc.j2
+    dest: "/etc/init.d/{{ postgresql_service_name }}"
+    mode: '0755'
+  when: ansible_facts.service_mgr == 'openrc'
+
+- name: Enable PostgreSQL OpenRC service
+  ansible.builtin.command: "rc-update add {{ postgresql_service_name }} default"
+  register: postgresql_openrc_enable
+  changed_when: postgresql_openrc_enable.rc == 0
+  failed_when: postgresql_openrc_enable.rc != 0 and 'already' not in postgresql_openrc_enable.stderr
+  when: ansible_facts.service_mgr == 'openrc'
+
+- name: Start PostgreSQL OpenRC service
+  ansible.builtin.service:
+    name: "{{ postgresql_service_name }}"
+    state: started
+  when: ansible_facts.service_mgr == 'openrc'
+
+- name: Create runit service directory
+  ansible.builtin.file:
+    path: "/etc/sv/{{ postgresql_service_name }}"
+    state: directory
+    mode: '0755'
+  when: ansible_facts.service_mgr == 'runit'
+
+- name: Install runit service run script
+  ansible.builtin.template:
+    src: postgresql.runit.j2
+    dest: "/etc/sv/{{ postgresql_service_name }}/run"
+    mode: '0755'
+  when: ansible_facts.service_mgr == 'runit'
+  notify: Restart PostgreSQL
+
+- name: Enable PostgreSQL runit service
+  ansible.builtin.file:
+    src: "/etc/sv/{{ postgresql_service_name }}"
+    dest: "/var/service/{{ postgresql_service_name }}"
+    state: link
+  when: ansible_facts.service_mgr == 'runit'
+
+- name: Start PostgreSQL runit service
+  ansible.builtin.command: "sv up {{ postgresql_service_name }}"
+  changed_when: false
+  when: ansible_facts.service_mgr == 'runit'

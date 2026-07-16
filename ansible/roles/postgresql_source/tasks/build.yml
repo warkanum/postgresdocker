@@ -1,0 +1,43 @@
+---
+- name: Create PostgreSQL build directory
+  ansible.builtin.file:
+    path: /usr/local/src/postgresql
+    state: directory
+    mode: '0755'
+
+- name: Download PostgreSQL source
+  ansible.builtin.get_url:
+    url: "{{ postgresql_source_url }}"
+    dest: "/usr/local/src/postgresql/postgresql-{{ postgresql_version }}.tar.bz2"
+    checksum: "sha256:{{ postgresql_source_sha256 }}"
+    mode: '0644'
+
+- name: Unpack PostgreSQL source
+  ansible.builtin.unarchive:
+    src: "/usr/local/src/postgresql/postgresql-{{ postgresql_version }}.tar.bz2"
+    dest: /usr/local/src/postgresql
+    remote_src: true
+    creates: "/usr/local/src/postgresql/postgresql-{{ postgresql_version }}/configure"
+
+- name: Configure PostgreSQL source build
+  ansible.builtin.command:
+    cmd: >-
+      ./configure --prefix={{ postgresql_install_prefix }} --with-openssl --with-icu
+      --with-libxml --with-libxslt --with-perl --with-python
+      {% if postgresql_major | int >= 13 %}--with-lz4{% endif %}
+      {% if postgresql_major | int >= 15 %}--with-zstd{% endif %}
+  args:
+    chdir: "/usr/local/src/postgresql/postgresql-{{ postgresql_version }}"
+    creates: "/usr/local/src/postgresql/postgresql-{{ postgresql_version }}/src/Makefile.global"
+
+- name: Compile PostgreSQL and contrib
+  ansible.builtin.command: "make -j{{ ansible_facts.processor_vcpus | default(2) }} world"
+  args:
+    chdir: "/usr/local/src/postgresql/postgresql-{{ postgresql_version }}"
+    creates: "{{ postgresql_install_prefix }}/bin/postgres"
+
+- name: Install PostgreSQL and contrib
+  ansible.builtin.command: make install-world
+  args:
+    chdir: "/usr/local/src/postgresql/postgresql-{{ postgresql_version }}"
+    creates: "{{ postgresql_install_prefix }}/share/extension/pgcrypto.control"

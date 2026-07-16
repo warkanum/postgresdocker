@@ -1,0 +1,29 @@
+---
+# Set these to the EnterpriseDB installer matching the PostgreSQL version.
+postgresql_windows_version: "18"
+postgresql_windows_installer_url: ""
+postgresql_windows_installer_checksum: ""
+postgresql_windows_installer_path: 'C:\Temp\postgresql-installer.exe'
+postgresql_windows_install_dir: 'C:\Program Files\PostgreSQL\18'
+postgresql_windows_data_dir: 'C:\PostgreSQL\18\data'
+postgresql_windows_port: 5432
+# The Windows service and PostgreSQL superuser deliberately share a dedicated,
+# configurable name rather than using the installer default of postgres.
+postgresql_windows_service_name: "pgza_{{ postgresql_windows_version }}"
+postgresql_windows_service_user: pgsql
+postgresql_windows_service_password: ""
+postgresql_windows_superuser: "{{ postgresql_windows_service_user }}"
+postgresql_windows_superuser_password: ""
+postgresql_windows_initial_database: "{{ postgresql_windows_superuser }}"
+postgresql_windows_extension_names:
+  - pgcrypto
+  - citext
+  - uuid-ossp
+  - pg_trgm
+  - hstore
+  - fuzzystrmatch
+  - btree_gin
+  - btree_gist
+  - amcheck
+  - pgstattuple
+  - unaccent

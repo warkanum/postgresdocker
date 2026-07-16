@@ -1,0 +1,84 @@
+---
+- name: Validate Windows installer variables
+  ansible.builtin.assert:
+    that:
+      - postgresql_windows_installer_url | length > 0
+      - postgresql_windows_installer_checksum | length == 64
+      - postgresql_windows_service_password | length > 0
+      - postgresql_windows_superuser_password | length > 0
+    fail_msg: >-
+      Set postgresql_windows_installer_url and the matching SHA-256. Windows support
+      also requires passwords for the dedicated pgsql service and database user.
+
+- name: Create dedicated Windows PostgreSQL service user
+  ansible.windows.win_user:
+    name: "{{ postgresql_windows_service_user }}"
+    password: "{{ postgresql_windows_service_password }}"
+    password_never_expires: true
+    state: present
+  no_log: true
+
+- name: Create Windows download directory
+  ansible.windows.win_file:
+    path: C:\Temp
+    state: directory
+
+- name: Download PostgreSQL installer
+  ansible.windows.win_get_url:
+    url: "{{ postgresql_windows_installer_url }}"
+    dest: "{{ postgresql_windows_installer_path }}"
+    checksum: "{{ postgresql_windows_installer_checksum }}"
+    checksum_algorithm: sha256
+
+- name: Install PostgreSQL server without optional stack builder packages
+  ansible.windows.win_package:
+    path: "{{ postgresql_windows_installer_path }}"
+    arguments: >-
+      --mode unattended --unattendedmodeui none --superaccount "{{ postgresql_windows_superuser }}"
+      --superpassword "{{ postgresql_windows_superuser_password }}"
+      --serviceaccount "{{ postgresql_windows_service_user }}" --servicepassword "{{ postgresql_windows_service_password }}"
+      --servicename "{{ postgresql_windows_service_name }}" --serverport {{ postgresql_windows_port }}
+      --prefix "{{ postgresql_windows_install_dir }}" --datadir "{{ postgresql_windows_data_dir }}"
+    state: present
+  no_log: true
+
+- name: Start PostgreSQL Windows service
+  ansible.windows.win_service:
+    name: "{{ postgresql_windows_service_name }}"
+    username: ".\\{{ postgresql_windows_service_user }}"
+    password: "{{ postgresql_windows_service_password }}"
+    start_mode: auto
+    state: started
+
+- name: Check whether the isolated initial database exists
+  ansible.windows.win_shell: >-
+    & '{{ postgresql_windows_install_dir }}\bin\psql.exe'
+    -U '{{ postgresql_windows_superuser }}' -d postgres -tAc
+    "SELECT 1 FROM pg_database WHERE datname = '{{ postgresql_windows_initial_database }}'"
+  environment:
+    PGPASSWORD: "{{ postgresql_windows_superuser_password }}"
+  register: postgresql_windows_initial_database_check
+  changed_when: false
+  no_log: true
+
+- name: Create isolated initial database
+  ansible.windows.win_shell: >-
+    & '{{ postgresql_windows_install_dir }}\bin\createdb.exe'
+    -U '{{ postgresql_windows_superuser }}' -O '{{ postgresql_windows_superuser }}'
+    '{{ postgresql_windows_initial_database }}'
+  environment:
+    PGPASSWORD: "{{ postgresql_windows_superuser_password }}"
+  when: postgresql_windows_initial_database_check.stdout | trim != '1'
+  no_log: true
+
+- name: Enable Windows-compatible bundled extensions
+  ansible.windows.win_shell: >-
+    & '{{ postgresql_windows_install_dir }}\bin\psql.exe'
+    -U '{{ postgresql_windows_superuser }}' -d '{{ postgresql_windows_initial_database }}' -v ON_ERROR_STOP=1
+    -c 'CREATE EXTENSION IF NOT EXISTS "{{ item }}"'
+  environment:
+    PGPASSWORD: "{{ postgresql_windows_superuser_password }}"
+  loop: "{{ postgresql_windows_extension_names }}"
+  loop_control:
+    label: "{{ item }}"
+  no_log: true

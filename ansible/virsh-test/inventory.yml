@@ -1,0 +1,17 @@
+---
+# Guests are assigned fixed DHCP leases by create-vms.sh on the pgza-test network.
+# Set ansible_user and private-key details here after completing each ISO install.
+all:
+  children:
+    postgresql_linux:
+      hosts:
+        pgza-arch:
+          ansible_host: 192.168.251.11
+        pgza-alma:
+          ansible_host: 192.168.251.12
+        pgza-void:
+          ansible_host: 192.168.251.13
+        pgza-ubuntu:
+          ansible_host: 192.168.251.14
+      vars:
+        ansible_user: ansible
