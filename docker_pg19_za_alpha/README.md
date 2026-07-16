@@ -112,6 +112,6 @@ Data is stored at `DATA_DIR` (default `/tmp/postgresql19_za_alpha_data`) mounted
 ## Docker Hub
 
 ```bash
-docker pull warkanum/postgresql19_za_alpha:latest
-docker run -d -p 5432:5432 --env-file .env --name pg19zaalpha warkanum/postgresql19_za_alpha
+docker pull warkanum/postgresql19_za_alpha:alpha
+docker run -d -p 5432:5432 --env-file .env --name pg19zaalpha warkanum/postgresql19_za_alpha:alpha
 ```

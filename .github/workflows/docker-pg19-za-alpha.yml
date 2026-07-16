@@ -1,25 +1,25 @@
-name: Build and Publish PostgreSQL 18 ZA
+name: Build and Publish PostgreSQL 19 ZA Alpha
 
 on:
   push:
     branches:
       - main
     tags:
-      - "pg18-v*.*.*"
+      - "pg19-alpha-v*.*.*"
     paths:
-      - ".github/workflows/docker-pg18-za.yml"
+      - ".github/workflows/docker-pg19-za-alpha.yml"
       - "Makefile"
-      - "docker_pg18_za/**"
+      - "docker_pg19_za_alpha/**"
   pull_request:
     paths:
-      - ".github/workflows/docker-pg18-za.yml"
+      - ".github/workflows/docker-pg19-za-alpha.yml"
       - "Makefile"
-      - "docker_pg18_za/**"
+      - "docker_pg19_za_alpha/**"
   workflow_dispatch:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: postgresql18_za
+  IMAGE_NAME: postgresql19_za_alpha
 
 jobs:
   build-and-push:
@@ -34,7 +34,7 @@ jobs:
       - name: Validate release tag
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          printf '%s\n' "$GITHUB_REF_NAME" | grep -Eq '^pg18-v[0-9]+\.[0-9]+\.[0-9]+$'
+          printf '%s\n' "$GITHUB_REF_NAME" | grep -Eq '^pg19-alpha-v[0-9]+\.[0-9]+\.[0-9]+$'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -45,8 +45,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=match,pattern=^pg18-(v[0-9]+\.[0-9]+\.[0-9]+)$,group=1
+            type=raw,value=alpha,enable=${{ github.ref == 'refs/heads/main' }}
+            type=match,pattern=^pg19-alpha-(v[0-9]+\.[0-9]+\.[0-9]+)$,group=1
             type=sha,prefix=sha-
 
       - name: Log in to Docker Hub
@@ -59,8 +59,8 @@ jobs:
       - name: Build and optionally push image
         uses: docker/build-push-action@v6
         with:
-          context: ./docker_pg18_za
-          file: ./docker_pg18_za/Dockerfile
+          context: ./docker_pg19_za_alpha
+          file: ./docker_pg19_za_alpha/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
