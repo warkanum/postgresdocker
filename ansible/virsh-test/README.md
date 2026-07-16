@@ -24,6 +24,8 @@ sudo virsh change-media pgza-arch sda --eject --config
 sudo virsh reboot pgza-arch
 ```
 
+The virtual network and DHCP leases are not enough by themselves: Ansible cannot connect until the guest OS has been installed and its SSH daemon is running. `run-ansible.sh` performs this readiness check first. It disables host-key checking only for these disposable VMs, so a recreated guest does not require manual `known_hosts` cleanup.
+
 The installer media URLs are official distribution endpoints as of July 2026. Arch's `latest` link is intentionally rolling; set `ARCH_ISO_URL` to a dated image and verify its signature when repeatability is required.
 
 ## Run Ansible
@@ -33,3 +35,17 @@ ANSIBLE_PRIVATE_KEY="$HOME/.ssh/pgza_test_ed25519" ./run-ansible.sh
 ```
 
 Pass normal playbook options after the script, for example `./run-ansible.sh --limit pgza-void`. The runner uses `inventory.yml` and runs `ansible/site.yml` only for the Linux test group.
+
+## Reinstall guests
+
+`bootstrap-vms.sh` performs a destructive unattended reinstall of named guests. It requires explicit confirmation:
+
+```bash
+CONFIRM_REINSTALL=1 BOOTSTRAP_PASSWORD='temporary-password' ./bootstrap-vms.sh alma ubuntu
+```
+
+Use that same temporary password for the first Ansible run when no SSH key has been provisioned:
+
+```bash
+ANSIBLE_PASSWORD='temporary-password' ./run-ansible.sh
+```
