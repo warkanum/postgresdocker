@@ -12,6 +12,7 @@ services:
       - "5403:5435"
     volumes:
       - /tmp/postgresql19_za_alpha_data:/var/lib/postgresql/data
+      - python_env:/opt/python_env
     env_file:
       - .env
     restart: unless-stopped
@@ -21,3 +22,6 @@ services:
         limits:
           memory: 10G
           cpus: '4'
+
+volumes:
+  python_env:

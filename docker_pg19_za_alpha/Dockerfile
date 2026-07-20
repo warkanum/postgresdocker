@@ -241,7 +241,8 @@ RUN /opt/python_env/bin/pip install --upgrade pip \
     && /opt/python_env/bin/pip install \
     beautifulsoup4 chardet numpy openpyxl pdfminer3k pillow \
     psycopg2 PyPDF2 pymssql python-docx python-magic requests \
-    scipy scp suds-community suds-jurko num2words
+    scipy scp suds-community suds-jurko num2words \
+    && chown -R postgres:postgres /opt/python_env
 
 # Make the venv accessible to PostgreSQL / PL/Python
 ENV VIRTUAL_ENV=/opt/python_env
