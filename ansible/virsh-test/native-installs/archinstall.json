@@ -1,0 +1,16 @@
+{
+  "hostname": "pgza-arch",
+  "disk_config": {
+    "config_type": "default_layout",
+    "device_modifications": [
+      {"device": "/dev/vda", "wipe": true}
+    ]
+  },
+  "profile": {"path": "./minimal.py"},
+  "network_config": {"type": "iso"},
+  "packages": ["openssh", "sudo"],
+  "services": ["sshd"],
+  "users": [
+    {"username": "ansible", "sudo": true, "groups": ["wheel"], "password": "!"}
+  ]
+}

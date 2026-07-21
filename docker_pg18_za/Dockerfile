@@ -165,7 +165,7 @@ RUN cd /tmp \
     && cd / \
     && rm -rf /tmp/pg_background
 
-RUN apk add --no-cache python3-dev g++ gcc unixodbc-dev unixodbc musl-dev freetds-dev freetds
+RUN apk add --no-cache python3-dev g++ gcc unixodbc-dev unixodbc musl-dev freetds-dev freetds libmagic
 
 RUN apk add --no-cache py3-html5lib py3-beautifulsoup4 py3-numpy py3-paramiko py3-psycopg2 py3-openssl py3-pypdf \
     py3-yaml py3-urllib3 py3-reportlab py3-mimeparse py3-num2words py3-rsa py3-pillow py3-openpyxl py3-lxml \
@@ -239,8 +239,10 @@ RUN python3 -m venv --system-site-packages /opt/python_env
 # Install Python 3 deps into the venv
 RUN /opt/python_env/bin/pip install --upgrade pip \
     && /opt/python_env/bin/pip install \
-    pymssql beautifulsoup4 chardet openpyxl pdfminer3k \
-    psycopg2 PyPDF2 python-docx suds-community num2words
+    beautifulsoup4 chardet numpy openpyxl pdfminer3k pillow \
+    psycopg2 PyPDF2 pymssql python-docx python-magic requests \
+    scipy scp suds-community num2words \
+    && chown -R postgres:postgres /opt/python_env
 
 # Make the venv accessible to PostgreSQL / PL/Python
 ENV VIRTUAL_ENV=/opt/python_env
@@ -279,9 +281,17 @@ RUN chmod +x /docker-entrypoint-initdb.d/setup-python-env.sh
 # Use a volume for the data directory (PG18+ uses version-specific subdirectories)
 VOLUME /var/lib/postgresql
 
-# Copy custom config files into image
+# Copy custom config files into image. /etc/postgresql is a symlink to
+# /etc/postgresql18 created by an earlier apk-installed package, and that
+# real directory is owned by uid/gid 70 (Alpine's original postgres uid)
+# with mode 750 — unreadable by the postgres user after the uid 1000 remap
+# above. `chown -R`/`chmod` on a symlink follow through to its target, so
+# fixing /etc/postgresql here also fixes /etc/postgresql18. Without this,
+# 01-apply-config.sh can't read custom.conf at container startup and the
+# container exits on first boot.
 COPY custom.conf /etc/postgresql/custom.conf
 COPY pg_hba.conf /etc/postgresql/pg_hba.conf
+RUN chown -R postgres:postgres /etc/postgresql && chmod 755 /etc/postgresql
 
 # Copy SSL certificate generation script
 COPY generate-ssl-certs.sh /usr/local/bin/generate-ssl-certs.sh

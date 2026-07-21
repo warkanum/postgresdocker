@@ -1,0 +1,12 @@
+#!/sbin/openrc-run
+
+name="PostgreSQL {{ postgresql_version }}"
+description="PostgreSQL database server"
+command="{{ postgresql_install_prefix }}/bin/pg_ctl"
+command_args="start -D {{ postgresql_data_dir }} -s -w -t 300"
+command_user="{{ postgresql_service_user }}:{{ postgresql_service_group }}"
+pidfile="{{ postgresql_data_dir }}/postmaster.pid"
+
+depend() {
+    need net
+}

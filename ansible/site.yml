@@ -1,0 +1,11 @@
+---
+- name: Build and run PostgreSQL from source on Linux
+  hosts: postgresql_linux
+  become: true
+  roles:
+    - role: postgresql_source
+
+- name: Install PostgreSQL on Windows (best-effort compatibility profile)
+  hosts: postgresql_windows
+  roles:
+    - role: postgresql_windows

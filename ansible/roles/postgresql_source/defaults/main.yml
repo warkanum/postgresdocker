@@ -1,0 +1,126 @@
+---
+# Keep the PostgreSQL major and patch configurable so this role can support old
+# releases as well as new majors without changing the task implementation.
+postgresql_version: "18.4"
+postgresql_source_sha256: "81a81ec695fb0c7901407defaa1d2f7973617154cf27ba74e3a7ab8e64436094"
+postgresql_source_url: "https://ftp.postgresql.org/pub/source/v{{ postgresql_version }}/postgresql-{{ postgresql_version }}.tar.bz2"
+postgresql_major: "{{ postgresql_version.split('.')[0] }}"
+postgresql_install_prefix: "/opt/postgresql/{{ postgresql_version }}"
+postgresql_data_dir: "/var/lib/pgsql/{{ postgresql_major }}/data"
+# This role never uses the distribution's postgres account or service.
+postgresql_service_user: pgsql
+postgresql_service_group: pgsql
+postgresql_service_home: "/home/{{ postgresql_service_user }}"
+postgresql_service_name: "pgza_{{ postgresql_major }}"
+postgresql_port: 5432
+postgresql_extension_profile: full
+postgresql_build_rust_extensions: true
+postgresql_create_extensions: true
+postgresql_initial_database: "{{ postgresql_service_user }}"
+postgresql_shared_preload_libraries:
+  - timescaledb
+  - pg_cron
+  - pg_qualstats
+  - pgaudit
+postgresql_extension_names:
+  - plpython3u
+  - vector
+  - postgis
+  - postgis_topology
+  - postgres_fdw
+  - pgcrypto
+  - citext
+  - pg_stat_statements
+  - timescaledb
+  - pg_jsonschema
+  - http
+  - pg_cron
+  - uuid-ossp
+  - pg_trgm
+  - hstore
+  - unaccent
+  - fuzzystrmatch
+  - btree_gist
+  - btree_gin
+  - amcheck
+  - pgstattuple
+  - pg_partman
+  - pg_qualstats
+  - pgaudit
+  - pg_background
+  - pg_repack
+  - pgrouting
+
+postgresql_pgrx_extensions:
+  pg_search:
+    repository: https://github.com/paradedb/paradedb.git
+    ref: v0.24.2
+    cargo_pgrx_version: 0.18.1
+  pg_jsonschema:
+    repository: https://github.com/supabase/pg_jsonschema.git
+    # This follows the Docker image, which builds the upstream default branch.
+    # Override with a tested release tag or commit for production deployments.
+    ref: master
+    cargo_pgrx_version: 0.16.1
+postgresql_pg_textsearch:
+  repository: https://github.com/timescale/pg_textsearch.git
+  ref: v1.3.1
+
+# Pin these in group variables before production use. Git refs are intentionally
+# configurable because extension support varies by PostgreSQL major.
+postgresql_extensions:
+  - name: vector
+    repository: https://github.com/pgvector/pgvector.git
+    ref: v0.8.0
+    control: vector.control
+    build: "make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config && make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config install"
+  - name: postgis
+    repository: https://github.com/postgis/postgis.git
+    ref: "3.5.2"
+    control: postgis.control
+    build: "./autogen.sh && ./configure --with-pgconfig={{ postgresql_install_prefix }}/bin/pg_config && make && make install"
+  - name: pgrouting
+    repository: https://github.com/pgRouting/pgrouting.git
+    ref: v3.7.2
+    control: pgrouting.control
+    build: "cmake -S . -B build -DPOSTGRESQL_PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config && cmake --build build && cmake --install build"
+  - name: timescaledb
+    repository: https://github.com/timescale/timescaledb.git
+    ref: 2.18.2
+    control: timescaledb.control
+    build: "./bootstrap -DREGRESS_CHECKS=OFF -DWARNINGS_AS_ERRORS=OFF -DPROJECT_INSTALL_METHOD=source && cmake --build build && cmake --install build"
+  - name: http
+    repository: https://github.com/pramsey/pgsql-http.git
+    ref: v1.6.0
+    control: http.control
+    build: "make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config && make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config install"
+  - name: pg_cron
+    repository: https://github.com/citusdata/pg_cron.git
+    ref: v1.6.4
+    control: pg_cron.control
+    build: "make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config && make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config install"
+  - name: pg_partman
+    repository: https://github.com/pgpartman/pg_partman.git
+    ref: v5.2.4
+    control: pg_partman.control
+    build: "make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config && make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config install"
+  - name: pgaudit
+    repository: https://github.com/pgaudit/pgaudit.git
+    ref: "REL_{{ postgresql_major }}_STABLE"
+    control: pgaudit.control
+    build: "make USE_PGXS=1 PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config && make USE_PGXS=1 PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config install"
+  - name: pg_repack
+    repository: https://github.com/reorg/pg_repack.git
+    ref: ver_1.5.2
+    control: pg_repack.control
+    build: "make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config && make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config install"
+  - name: pg_qualstats
+    repository: https://github.com/powa-team/pg_qualstats.git
+    ref: 2.1.1
+    control: pg_qualstats.control
+    build: "make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config && make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config install"
+  - name: pg_background
+    repository: https://github.com/vibhorkum/pg_background.git
+    ref: master
+    control: pg_background.control
+    build: "make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config && make PG_CONFIG={{ postgresql_install_prefix }}/bin/pg_config install"

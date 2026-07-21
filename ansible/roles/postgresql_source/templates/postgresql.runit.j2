@@ -1,0 +1,4 @@
+#!/bin/sh
+export PGDATA="{{ postgresql_data_dir }}"
+exec chpst -u {{ postgresql_service_user }}:{{ postgresql_service_group }} \
+    {{ postgresql_install_prefix }}/bin/postgres -D "$PGDATA"

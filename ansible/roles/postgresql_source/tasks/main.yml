@@ -1,0 +1,36 @@
+---
+- name: Validate supported Linux distribution
+  ansible.builtin.assert:
+    that: ansible_facts.os_family in ['Debian', 'RedHat', 'Archlinux', 'Gentoo', 'Void']
+    fail_msg: "Supported Linux families are Debian/Ubuntu, RedHat/Alma/CentOS, Arch, Gentoo, and Void."
+
+- name: Validate PostgreSQL source checksum is supplied
+  ansible.builtin.assert:
+    that: postgresql_source_sha256 | length == 64
+    fail_msg: "Set postgresql_source_sha256 to the 64-character upstream SHA-256 for PostgreSQL {{ postgresql_version }}."
+
+- name: Install build prerequisites
+  ansible.builtin.include_tasks: prerequisites.yml
+
+- name: Build PostgreSQL
+  ansible.builtin.include_tasks: build.yml
+
+- name: Build selected extensions
+  ansible.builtin.include_tasks: extensions.yml
+  when: postgresql_extension_profile == 'full'
+
+- name: Build Rust extensions from the Docker extension catalogue
+  ansible.builtin.include_tasks: rust_extensions.yml
+  when:
+    - postgresql_extension_profile == 'full'
+    - postgresql_build_rust_extensions | bool
+
+- name: Configure PostgreSQL service
+  ansible.builtin.include_tasks: service.yml
+
+- name: Apply pending configuration before database initialization
+  ansible.builtin.meta: flush_handlers
+
+- name: Create Docker-profile extensions in the initial database
+  ansible.builtin.include_tasks: database.yml
+  when: postgresql_create_extensions | bool

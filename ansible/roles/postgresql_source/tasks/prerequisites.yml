@@ -1,0 +1,11 @@
+---
+- name: Install Ubuntu, AlmaLinux, and CentOS build packages
+  ansible.builtin.package:
+    name: "{{ postgresql_build_packages[ansible_facts.os_family] }}"
+    state: present
+  when: ansible_facts.os_family in ['Debian', 'RedHat', 'Archlinux', 'Void']
+
+- name: Install Gentoo build packages
+  ansible.builtin.command: "emerge --noreplace {{ postgresql_build_packages.Gentoo | join(' ') }}"
+  changed_when: false
+  when: ansible_facts.os_family == 'Gentoo'

@@ -1,0 +1,13 @@
+all:
+  children:
+    postgresql_linux:
+      hosts:
+        db01:
+          ansible_host: 192.0.2.10
+    postgresql_windows:
+      hosts:
+        win-db01:
+          ansible_host: 192.0.2.20
+          ansible_connection: winrm
+          ansible_user: Administrator
+          ansible_password: change-me

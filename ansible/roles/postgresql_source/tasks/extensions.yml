@@ -1,0 +1,23 @@
+---
+- name: Create extension source directory
+  ansible.builtin.file:
+    path: /usr/local/src/postgresql/extensions
+    state: directory
+    mode: '0755'
+
+- name: Build Linux extension catalogue
+  ansible.builtin.shell: |
+    set -o pipefail
+    rm -rf "{{ extension_dir }}"
+    git clone --depth 1 --branch "{{ item.ref }}" "{{ item.repository }}" "{{ extension_dir }}"
+    cd "{{ extension_dir }}"
+    {{ item.build }}
+  args:
+    executable: /bin/bash
+    creates: "{{ postgresql_install_prefix }}/share/extension/{{ item.control }}"
+  vars:
+    extension_dir: "/usr/local/src/postgresql/extensions/{{ item.name }}-{{ postgresql_version }}"
+  loop: "{{ postgresql_extensions }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: Restart PostgreSQL

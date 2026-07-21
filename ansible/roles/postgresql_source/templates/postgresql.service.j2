@@ -1,0 +1,18 @@
+[Unit]
+Description=PostgreSQL {{ postgresql_version }} database server
+After=network.target
+
+[Service]
+Type=simple
+User={{ postgresql_service_user }}
+Group={{ postgresql_service_group }}
+Environment=PGDATA={{ postgresql_data_dir }}
+ExecStart={{ postgresql_install_prefix }}/bin/postgres -D {{ postgresql_data_dir }}
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGINT
+TimeoutSec=0
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -165,7 +165,7 @@ RUN cd /tmp \
     && cd / \
     && rm -rf /tmp/pg_background
 
-RUN apk add --no-cache python3-dev g++ gcc unixodbc-dev unixodbc musl-dev freetds-dev freetds
+RUN apk add --no-cache python3-dev g++ gcc unixodbc-dev unixodbc musl-dev freetds-dev freetds file-libs
 
 RUN apk add --no-cache py3-html5lib py3-beautifulsoup4 py3-numpy py3-paramiko py3-psycopg2 py3-openssl py3-pypdf \
     py3-yaml py3-urllib3 py3-reportlab py3-mimeparse py3-num2words py3-rsa py3-pillow py3-openpyxl py3-lxml \
@@ -239,8 +239,10 @@ RUN python3 -m venv --system-site-packages /opt/python_env
 # Install Python 3 deps into the venv
 RUN /opt/python_env/bin/pip install --upgrade pip \
     && /opt/python_env/bin/pip install \
-    pymssql beautifulsoup4 chardet openpyxl pdfminer3k \
-    psycopg2 PyPDF2 python-docx suds-community num2words
+    beautifulsoup4 chardet numpy openpyxl pdfminer3k pillow \
+    psycopg2 PyPDF2 pymssql python-docx python-magic requests \
+    scipy scp suds-community suds-jurko num2words \
+    && chown -R postgres:postgres /opt/python_env
 
 # Make the venv accessible to PostgreSQL / PL/Python
 ENV VIRTUAL_ENV=/opt/python_env
