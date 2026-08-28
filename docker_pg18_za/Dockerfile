@@ -6,6 +6,7 @@ ARG PG_SEARCH_VERSION=0.24.2
 ARG PG_TEXTSEARCH_VERSION=1.3.1
 ARG CARGO_PGRX_VERSION=0.18.1
 ARG PG_JSONSCHEMA_PGRX_VERSION=0.16.1
+ARG VECTORCHORD_VERSION=1.1.1
 
 # Set the timezone to Africa/Johannesburg
 ENV TZ=Africa/Johannesburg
@@ -186,6 +187,7 @@ ARG PG_SEARCH_VERSION
 ARG PG_TEXTSEARCH_VERSION
 ARG CARGO_PGRX_VERSION
 ARG PG_JSONSCHEMA_PGRX_VERSION
+ARG VECTORCHORD_VERSION
 
 ENV LIBCLANG_PATH=/usr/lib/llvm21/lib
 
@@ -219,6 +221,18 @@ RUN cargo install --locked cargo-pgrx --version "${PG_JSONSCHEMA_PGRX_VERSION}" 
     && cargo pgrx install --release --features pg18 --pg-config /usr/local/bin/pg_config \
     && cd / \
     && rm -rf /tmp/pg_jsonschema /root/.cargo/registry /root/.cargo/git /root/.rustup /root/.pgrx
+
+# Build VectorChord against the system PostgreSQL 18 installation. VectorChord
+# depends on pgvector's vector type and must be listed in shared_preload_libraries
+# before CREATE EXTENSION can run at first database initialization.
+RUN cd /tmp \
+    && wget -O VectorChord.tar.gz "https://github.com/tensorchord/VectorChord/archive/refs/tags/${VECTORCHORD_VERSION}.tar.gz" \
+    && tar -xzf VectorChord.tar.gz \
+    && cd "VectorChord-${VECTORCHORD_VERSION}" \
+    && make PG_CONFIG=/usr/local/bin/pg_config build \
+    && make PG_CONFIG=/usr/local/bin/pg_config install \
+    && cd / \
+    && rm -rf /tmp/VectorChord.tar.gz "/tmp/VectorChord-${VECTORCHORD_VERSION}" /root/.cargo/registry /root/.cargo/git
 
 FROM pgdocker-base
 
@@ -259,9 +273,11 @@ ENV POSTGRES_DB=postgres
 COPY --from=pgdocker-ext-builder /usr/local/lib/postgresql/pg_search* /usr/local/lib/postgresql/
 COPY --from=pgdocker-ext-builder /usr/local/lib/postgresql/pg_textsearch* /usr/local/lib/postgresql/
 COPY --from=pgdocker-ext-builder /usr/local/lib/postgresql/pg_jsonschema* /usr/local/lib/postgresql/
+COPY --from=pgdocker-ext-builder /usr/local/lib/postgresql/vchord* /usr/local/lib/postgresql/
 COPY --from=pgdocker-ext-builder /usr/local/share/postgresql/extension/pg_search* /usr/local/share/postgresql/extension/
 COPY --from=pgdocker-ext-builder /usr/local/share/postgresql/extension/pg_textsearch* /usr/local/share/postgresql/extension/
 COPY --from=pgdocker-ext-builder /usr/local/share/postgresql/extension/pg_jsonschema* /usr/local/share/postgresql/extension/
+COPY --from=pgdocker-ext-builder /usr/local/share/postgresql/extension/vchord* /usr/local/share/postgresql/extension/
 
 # Initialize the data directory if not initialized
 #COPY init-db.sh /docker-entrypoint-initdb.d/init-db.sh

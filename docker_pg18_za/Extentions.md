@@ -34,6 +34,7 @@ This image ships with PostgreSQL 18 plus a broad set of contrib and third-party 
 | `unaccent` | Text | Removes accents and diacritics for normalized text search. |
 | `uuid-ossp` | Utility | Generates UUIDs using several algorithms. |
 | `vector` | AI/Search | Adds vector data types and similarity search for embeddings. |
+| `vchord` | AI/Search | Adds VectorChord scalable disk-friendly vector indexes compatible with pgvector data types. |
 
 ## Included via `postgresql-contrib`
 
@@ -41,7 +42,7 @@ The image installs `postgresql-contrib`, which provides many built-in PostgreSQL
 
 ## Good Defaults By Use Case
 
-- Search and AI: `vector`, `pg_search`, `pg_textsearch`, `pg_trgm`, `unaccent`
+- Search and AI: `vector`, `vchord`, `pg_search`, `pg_textsearch`, `pg_trgm`, `unaccent`
 - Geospatial: `postgis`, `postgis_topology`, `pgrouting`
 - Observability and tuning: `pg_stat_statements`, `pg_qualstats`, `pgstattuple`, `amcheck`
 - Scheduling and async work: `pg_cron`, `pg_background`
@@ -53,4 +54,5 @@ The image installs `postgresql-contrib`, which provides many built-in PostgreSQL
 
 - `pg_cron` requires `shared_preload_libraries` and a configured `cron.database_name`; this image wires both during initialization.
 - `pg_qualstats` requires `shared_preload_libraries`; it is preloaded in `custom.conf`.
+- `vchord` requires `shared_preload_libraries` and depends on `vector`; PostgreSQL 18 builds it from VectorChord `1.1.1` source because upstream release assets currently cover PostgreSQL 18 but not PostgreSQL 19 alpha.
 - `pg_background` does not require preloading, but it is installed and ready to `CREATE EXTENSION`.

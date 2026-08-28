@@ -72,6 +72,7 @@ Runtime settings in `Makefile`:
 | Extension | Purpose |
 |-----------|---------|
 | pgvector | Vector similarity search |
+| VectorChord (`vchord`) | Scalable disk-friendly vector indexes compatible with pgvector data types |
 | PostGIS + pgrouting | Geospatial + routing |
 | TimescaleDB | Time-series data |
 | pg_search | ParadeDB BM25 search |
@@ -100,6 +101,8 @@ Runtime settings in `Makefile`:
 
 See [Extentions.md](/home/warkanum/dev/postgresdocker/docker_pg18_za/Extentions.md) for a fuller description of every installed extension and when to use it.
 `plv8` remains commented out in the Dockerfile and is not currently built into the image.
+
+VectorChord is enabled only for the PostgreSQL 18 image for now. Upstream VectorChord `1.1.1` publishes PostgreSQL 18 release assets and documents `CREATE EXTENSION IF NOT EXISTS vchord CASCADE;`; PostgreSQL 19 alpha is intentionally left unchanged until upstream publishes or documents PostgreSQL 19-compatible release support. Yes, alpha software depending on other alpha compatibility would be very on-brand, but not maintainable.
 
 ## SSL
 

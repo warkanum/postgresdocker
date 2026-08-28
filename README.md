@@ -222,6 +222,7 @@ If you are testing destructive initialization changes, use a disposable data dir
 The active images ship with a broad extension set. Depending on the image version, this includes tools such as:
 
 - `pgvector`
+- `vchord` / VectorChord in the PostgreSQL 18 image only
 - `postgis`
 - `pgrouting`
 - `timescaledb`
@@ -252,7 +253,7 @@ For detailed extension notes, use the image-specific documentation:
 - [`docker_pg18_za/Extentions.md`](./docker_pg18_za/Extentions.md)
 - [`docker_pg19_za_alpha/Extentions.md`](./docker_pg19_za_alpha/Extentions.md)
 
-Also worth noting: `plv8` is present in comments in the Dockerfiles but is not currently enabled in the built images.
+Also worth noting: `plv8` is present in comments in the Dockerfiles but is not currently enabled in the built images. VectorChord is currently enabled for PostgreSQL 18 only; PostgreSQL 19 alpha remains unchanged until upstream VectorChord publishes or documents PostgreSQL 19-compatible release support.
 
 ## SSL
 
