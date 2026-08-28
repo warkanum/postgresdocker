@@ -5,6 +5,7 @@ FROM docker.io/library/postgres:18-alpine as pgdocker-base
 ARG PG_SEARCH_VERSION=0.24.2
 ARG PG_TEXTSEARCH_VERSION=1.3.1
 ARG CARGO_PGRX_VERSION=0.18.1
+ARG PG_JSONSCHEMA_VERSION=0.3.4
 ARG PG_JSONSCHEMA_PGRX_VERSION=0.16.1
 ARG VECTORCHORD_VERSION=1.1.1
 
@@ -186,6 +187,7 @@ FROM pgdocker-base as pgdocker-ext-builder
 ARG PG_SEARCH_VERSION
 ARG PG_TEXTSEARCH_VERSION
 ARG CARGO_PGRX_VERSION
+ARG PG_JSONSCHEMA_VERSION
 ARG PG_JSONSCHEMA_PGRX_VERSION
 ARG VECTORCHORD_VERSION
 
@@ -212,10 +214,12 @@ RUN cargo install --locked cargo-pgrx --version "${CARGO_PGRX_VERSION}" \
     && cd / \
     && rm -rf /tmp/paradedb /root/.cargo/registry /root/.cargo/git /root/.rustup /root/.pgrx
 
-# Build pg_jsonschema with the pgrx toolchain version it targets.
+# Build pg_jsonschema with the pgrx toolchain version it targets. Pin to a
+# release tag: master tracks newer pgrx releases and breaks the pinned
+# cargo-pgrx install with a metadata::validate version mismatch.
 RUN cargo install --locked cargo-pgrx --version "${PG_JSONSCHEMA_PGRX_VERSION}" --force \
     && cd /tmp \
-    && git clone https://github.com/supabase/pg_jsonschema.git \
+    && git clone --branch "v${PG_JSONSCHEMA_VERSION}" --depth 1 https://github.com/supabase/pg_jsonschema.git \
     && cd pg_jsonschema \
     && cargo pgrx init --pg18=/usr/local/bin/pg_config \
     && cargo pgrx install --release --features pg18 --pg-config /usr/local/bin/pg_config \
