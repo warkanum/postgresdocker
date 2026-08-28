@@ -3,7 +3,7 @@ name: Build and Publish PostgreSQL 18 ZA
 on:
   push:
     branches:
-      - main
+      - master
     tags:
       - "pg18-v*.*.*"
     paths:
@@ -45,7 +45,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/pg18-v') }}
             type=match,pattern=^pg18-(v[0-9]+\.[0-9]+\.[0-9]+)$,group=1
             type=sha,prefix=sha-
 
