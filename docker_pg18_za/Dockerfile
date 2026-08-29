@@ -301,17 +301,21 @@ RUN chmod +x /docker-entrypoint-initdb.d/setup-python-env.sh
 # Use a volume for the data directory (PG18+ uses version-specific subdirectories)
 VOLUME /var/lib/postgresql
 
-# Copy custom config files into image. /etc/postgresql is a symlink to
-# /etc/postgresql18 created by an earlier apk-installed package, and that
-# real directory is owned by uid/gid 70 (Alpine's original postgres uid)
-# with mode 750 — unreadable by the postgres user after the uid 1000 remap
-# above. `chown -R`/`chmod` on a symlink follow through to its target, so
-# fixing /etc/postgresql here also fixes /etc/postgresql18. Without this,
-# 01-apply-config.sh can't read custom.conf at container startup and the
-# container exits on first boot.
+# Copy custom config files into image. Alpine packages may leave
+# /etc/postgresql as a symlink to /etc/postgresql18, with the real directory
+# owned by uid/gid 70 and mode 750. The image remaps postgres to DOCKER_UID
+# above, so fix both possible paths explicitly instead of relying on recursive
+# chown/chmod symlink traversal semantics. Without this, 01-apply-config.sh
+# can't read custom.conf at container startup and the container exits on first
+# boot.
 COPY custom.conf /etc/postgresql/custom.conf
 COPY pg_hba.conf /etc/postgresql/pg_hba.conf
-RUN chown -R postgres:postgres /etc/postgresql && chmod 755 /etc/postgresql
+RUN for dir in /etc/postgresql /etc/postgresql18; do \
+        if [ -e "$dir" ]; then \
+            chown -R postgres:postgres "$dir" && chmod 755 "$dir"; \
+        fi; \
+    done \
+    && chmod 644 /etc/postgresql/custom.conf /etc/postgresql/pg_hba.conf
 
 # Copy SSL certificate generation script
 COPY generate-ssl-certs.sh /usr/local/bin/generate-ssl-certs.sh
