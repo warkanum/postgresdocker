@@ -25,6 +25,14 @@ if [ -f /etc/ssl/postgresql/server.crt ] && [ -f /etc/ssl/postgresql/server.key 
     cp /etc/ssl/postgresql/server.key "$SSL_DIR/server.key"
     chmod 600 "$SSL_DIR/server.key"
     chmod 644 "$SSL_DIR/server.crt"
+    # Ensure the runtime postgres user owns the auto-generated certificates.
+    # The build-time certs are copied (preserving the build uid) and chmod'd,
+    # but never chown'd. When the mounted data volume is owned by a different
+    # uid, postgres cannot read server.key and exits with:
+    #   FATAL: private key file "server.key" has group or world access
+    #   FATAL: could not load server certificate file "server.crt"
+    # Fix ownership explicitly so SSL loads reliably regardless of volume owner.
+    chown -R postgres:postgres "$SSL_DIR" 2>/dev/null || true
     echo "SSL certificates copied to data directory"
 else
     echo "Warning: SSL certificates not found at build-time location"
