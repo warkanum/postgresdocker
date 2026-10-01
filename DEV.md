@@ -9,7 +9,8 @@ The root [`Makefile`](./Makefile) manages repository release tags for the active
 Current release families:
 
 - PostgreSQL 18 uses tags like `pg18-v1.2.3`
-- PostgreSQL 19 alpha uses tags like `pg19-alpha-v0.2.0`
+- PostgreSQL 18 VectorChord uses tags like `pg18vc-v1.2.3`
+- PostgreSQL 19 uses tags like `pg19-v1.2.3`
 
 ## Preview The Next Release Tags
 
@@ -23,6 +24,7 @@ To preview one track only:
 
 ```bash
 make version-pg18
+make version-pg18vc
 make version-pg19
 ```
 
@@ -31,7 +33,8 @@ The `Makefile` inspects existing tags and increments the patch version automatic
 Default starting points:
 
 - PG18 starts at `v1.0.0` if no matching tags exist
-- PG19 alpha starts at `v0.1.0` if no matching tags exist
+- PG18 VectorChord starts at `v1.0.0` if no matching tags exist
+- PG19 starts at `v1.0.0` if no matching tags exist
 
 ## Create And Push A Release
 
@@ -41,7 +44,13 @@ For PostgreSQL 18:
 make release-pg18
 ```
 
-For PostgreSQL 19 alpha:
+For PostgreSQL 18 VectorChord:
+
+```bash
+make release-pg18vc
+```
+
+For PostgreSQL 19:
 
 ```bash
 make release-pg19
@@ -63,7 +72,8 @@ Examples:
 
 ```bash
 make release-pg18 VERSION=v2.0.0
-make release-pg19 VERSION=v0.2.0
+make release-pg18vc VERSION=v2.0.0
+make release-pg19 VERSION=v2.0.0
 ```
 
 Providing `VERSION=2.0.0` also works; the `Makefile` normalizes it to `v2.0.0`.
@@ -73,7 +83,8 @@ Providing `VERSION=2.0.0` also works; the `Makefile` normalizes it to `v2.0.0`.
 Pushing a release tag triggers the matching GitHub Actions workflow for that image line.
 
 - `release-pg18` triggers the PostgreSQL 18 workflow and publishes the image using the matching version
-- `release-pg19` triggers the PostgreSQL 19 alpha workflow and publishes the image using the matching version
+- `release-pg18vc` triggers the PostgreSQL 18 VectorChord workflow and publishes the image using the matching version
+- `release-pg19` triggers the PostgreSQL 19 workflow and publishes the image using the matching version
 
 ## Helpful Commands
 

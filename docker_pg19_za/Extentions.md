@@ -15,11 +15,9 @@ This image ships with PostgreSQL 19 plus a broad set of contrib and third-party 
 | `http` | Integration | Lets SQL functions make outbound HTTP requests. |
 | `pg_background` | Jobs | Runs SQL asynchronously in PostgreSQL background workers. |
 | `pg_cron` | Scheduling | Schedules recurring SQL jobs inside PostgreSQL. |
-| `pg_jsonschema` | Validation | Validates `json` and `jsonb` values against JSON Schema. |
 | `pg_partman` | Partitioning | Automates time-based and serial-based partition management. |
 | `pg_qualstats` | Observability | Tracks predicate usage in `WHERE` and `JOIN` clauses for tuning and index advice. |
 | `pg_repack` | Maintenance | Rebuilds bloated tables and indexes online with minimal locking. |
-| `pg_search` | Search | Provides ParadeDB full-text and relevance search features. |
 | `pg_stat_statements` | Observability | Tracks normalized query execution statistics. |
 | `pg_textsearch` | Search | Adds BM25-style text search support. |
 | `pg_trgm` | Text | Adds trigram similarity search and fast fuzzy matching indexes. |
@@ -41,7 +39,7 @@ The image installs `postgresql-contrib`, which provides many built-in PostgreSQL
 
 ## Good Defaults By Use Case
 
-- Search and AI: `vector`, `pg_search`, `pg_textsearch`, `pg_trgm`, `unaccent`
+- Search and AI: `vector`, `pg_textsearch`, `pg_trgm`, `unaccent`
 - Geospatial: `postgis`, `postgis_topology`, `pgrouting`
 - Observability and tuning: `pg_stat_statements`, `pg_qualstats`, `pgstattuple`, `amcheck`
 - Scheduling and async work: `pg_cron`, `pg_background`
@@ -54,3 +52,5 @@ The image installs `postgresql-contrib`, which provides many built-in PostgreSQL
 - `pg_cron` requires `shared_preload_libraries` and a configured `cron.database_name`; this image wires both during initialization.
 - `pg_qualstats` requires `shared_preload_libraries`; it is preloaded in `custom.conf`.
 - `pg_background` does not require preloading, but it is installed and ready to `CREATE EXTENSION`.
+- `pg_search`, `pg_jsonschema` and `vchord` are not built for PostgreSQL 19: upstream has no PG19 support yet (pgrx/feature flags stop at `pg18`).
+- `pg_textsearch` PG19 support is best-effort upstream (beta); it is built but not created by default.

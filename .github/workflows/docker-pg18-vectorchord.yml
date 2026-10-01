@@ -1,25 +1,25 @@
-name: Build and Publish PostgreSQL 19 ZA Alpha
+name: Build and Publish PostgreSQL 18 VectorChord ZA
 
 on:
   push:
     branches:
-      - main
+      - master
     tags:
-      - "pg19-alpha-v*.*.*"
+      - "pg18vc-v*.*.*"
     paths:
-      - ".github/workflows/docker-pg19-za-alpha.yml"
+      - ".github/workflows/docker-pg18-vectorchord.yml"
       - "Makefile"
-      - "docker_pg19_za_alpha/**"
+      - "docker_pg18_vectorchord/**"
   pull_request:
     paths:
-      - ".github/workflows/docker-pg19-za-alpha.yml"
+      - ".github/workflows/docker-pg18-vectorchord.yml"
       - "Makefile"
-      - "docker_pg19_za_alpha/**"
+      - "docker_pg18_vectorchord/**"
   workflow_dispatch:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: postgresql19_za_alpha
+  IMAGE_NAME: postgresql18_vectorchord
 
 jobs:
   build-and-push:
@@ -34,7 +34,7 @@ jobs:
       - name: Validate release tag
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          printf '%s\n' "$GITHUB_REF_NAME" | grep -Eq '^pg19-alpha-v[0-9]+\.[0-9]+\.[0-9]+$'
+          printf '%s\n' "$GITHUB_REF_NAME" | grep -Eq '^pg18vc-v[0-9]+\.[0-9]+\.[0-9]+$'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -45,8 +45,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=alpha,enable=${{ github.ref == 'refs/heads/main' }}
-            type=match,pattern=^pg19-alpha-(v[0-9]+\.[0-9]+\.[0-9]+)$,group=1
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/pg18vc-v') }}
+            type=match,pattern=^pg18vc-(v[0-9]+\.[0-9]+\.[0-9]+)$,group=1
             type=sha,prefix=sha-
 
       - name: Log in to Docker Hub
@@ -59,8 +59,8 @@ jobs:
       - name: Build and optionally push image
         uses: docker/build-push-action@v6
         with:
-          context: ./docker_pg19_za_alpha
-          file: ./docker_pg19_za_alpha/Dockerfile
+          context: ./docker_pg18_vectorchord
+          file: ./docker_pg18_vectorchord/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

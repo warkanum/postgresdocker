@@ -1,4 +1,4 @@
-# Makefile for PostgreSQL 19 Alpha Docker Image
+# Makefile for PostgreSQL 19 Docker Image
 # Usage: make [target]
 
 # Load environment variables from .env file
@@ -11,10 +11,10 @@ endif
 DOCKER_CMD ?= docker
 REGISTRY ?= docker.io
 DOCKERHUB_USER ?= warkanum
-IMAGE_NAME ?= postgresql19_za_alpha
+IMAGE_NAME ?= postgresql19_za
 FULL_IMAGE_NAME = $(REGISTRY)/$(DOCKERHUB_USER)/$(IMAGE_NAME)
 VERSION ?= latest
-CONTAINER_NAME ?= postgresql19_za_alpha
+CONTAINER_NAME ?= postgresql19_za
 
 # Docker build arguments
 DOCKER_UID ?= 1000
@@ -23,7 +23,7 @@ DOCKER_GID ?= 1000
 # Container runtime settings
 HOST_PORT ?= 5432
 CONTAINER_PORT ?= 5432
-DATA_DIR ?= /tmp/postgresql19_za_alpha_data
+DATA_DIR ?= /tmp/postgresql19_za_data
 SHM_SIZE ?= 4g
 MEMORY_LIMIT ?= 4G
 CPU_LIMIT ?= 4
@@ -38,7 +38,7 @@ NC := \033[0m # No Color
 
 # Default target
 help:
-	@printf '%b\n' "$(BLUE)PostgreSQL 19 Alpha Docker Image - Available targets:$(NC)"
+	@printf '%b\n' "$(BLUE)PostgreSQL 19 Docker Image - Available targets:$(NC)"
 	@printf '%b\n' ""
 	@printf '%b\n' "  $(GREEN)build$(NC)          - Build the Docker image"
 	@printf '%b\n' "  $(GREEN)tag$(NC)            - Tag the image with version"

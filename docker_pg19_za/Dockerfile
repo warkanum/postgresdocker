@@ -1,11 +1,10 @@
 # Use the official PostgreSQL image with Alpine Linux as the base image
-FROM docker.io/library/postgres:19-alpine as pgdocker-base
+# PostgreSQL 19 is still in beta upstream; switch to 19-alpine once it is GA
+ARG PG_IMAGE_TAG=19beta4-alpine
+FROM docker.io/library/postgres:${PG_IMAGE_TAG} as pgdocker-base
 
 # Pinned extension versions for reproducible builds
-ARG PG_SEARCH_VERSION=0.24.2
-ARG PG_TEXTSEARCH_VERSION=1.3.1
-ARG CARGO_PGRX_VERSION=0.18.1
-ARG PG_JSONSCHEMA_PGRX_VERSION=0.16.1
+ARG PG_TEXTSEARCH_VERSION=1.5.0
 
 # Set the timezone to Africa/Johannesburg
 ENV TZ=Africa/Johannesburg
@@ -165,7 +164,7 @@ RUN cd /tmp \
     && cd / \
     && rm -rf /tmp/pg_background
 
-RUN apk add --no-cache python3-dev g++ gcc unixodbc-dev unixodbc musl-dev freetds-dev freetds file-libs
+RUN apk add --no-cache python3-dev g++ gcc unixodbc-dev unixodbc musl-dev freetds-dev freetds libmagic
 
 RUN apk add --no-cache py3-html5lib py3-beautifulsoup4 py3-numpy py3-paramiko py3-psycopg2 py3-openssl py3-pypdf \
     py3-yaml py3-urllib3 py3-reportlab py3-mimeparse py3-num2words py3-rsa py3-pillow py3-openpyxl py3-lxml \
@@ -182,14 +181,7 @@ RUN apk add --no-cache py3-html5lib py3-beautifulsoup4 py3-numpy py3-paramiko py
 
 FROM pgdocker-base as pgdocker-ext-builder
 
-ARG PG_SEARCH_VERSION
 ARG PG_TEXTSEARCH_VERSION
-ARG CARGO_PGRX_VERSION
-ARG PG_JSONSCHEMA_PGRX_VERSION
-
-ENV LIBCLANG_PATH=/usr/lib/llvm21/lib
-
-RUN apk add --no-cache cargo rust rustfmt clang21-libclang
 
 # Build pg_textsearch against the system PostgreSQL 19 installation.
 RUN cd /tmp \
@@ -200,25 +192,6 @@ RUN cd /tmp \
     && cd / \
     && rm -rf /tmp/pg_textsearch
 
-# Build pg_search with pgrx against the system PostgreSQL 19 installation.
-RUN cargo install --locked cargo-pgrx --version "${CARGO_PGRX_VERSION}" \
-    && cd /tmp \
-    && git clone --branch "v${PG_SEARCH_VERSION}" --depth 1 https://github.com/paradedb/paradedb.git \
-    && cd paradedb \
-    && cargo pgrx init --pg19=/usr/local/bin/pg_config \
-    && cargo pgrx install --package pg_search --release --pg-config /usr/local/bin/pg_config \
-    && cd / \
-    && rm -rf /tmp/paradedb /root/.cargo/registry /root/.cargo/git /root/.rustup /root/.pgrx
-
-# Build pg_jsonschema with the pgrx toolchain version it targets.
-RUN cargo install --locked cargo-pgrx --version "${PG_JSONSCHEMA_PGRX_VERSION}" --force \
-    && cd /tmp \
-    && git clone https://github.com/supabase/pg_jsonschema.git \
-    && cd pg_jsonschema \
-    && cargo pgrx init --pg19=/usr/local/bin/pg_config \
-    && cargo pgrx install --release --features pg19 --pg-config /usr/local/bin/pg_config \
-    && cd / \
-    && rm -rf /tmp/pg_jsonschema /root/.cargo/registry /root/.cargo/git /root/.rustup /root/.pgrx
 
 FROM pgdocker-base
 
@@ -241,7 +214,7 @@ RUN /opt/python_env/bin/pip install --upgrade pip \
     && /opt/python_env/bin/pip install \
     beautifulsoup4 chardet numpy openpyxl pdfminer3k pillow \
     psycopg2 PyPDF2 pymssql python-docx python-magic requests \
-    scipy scp suds-community suds-jurko num2words \
+    scipy scp suds-community num2words \
     && chown -R postgres:postgres /opt/python_env
 
 # Make the venv accessible to PostgreSQL / PL/Python
@@ -256,12 +229,8 @@ ENV POSTGRES_PASSWORD=password
 ENV POSTGRES_DB=postgres
 
 # Copy externally built search extensions into the final image.
-COPY --from=pgdocker-ext-builder /usr/local/lib/postgresql/pg_search* /usr/local/lib/postgresql/
 COPY --from=pgdocker-ext-builder /usr/local/lib/postgresql/pg_textsearch* /usr/local/lib/postgresql/
-COPY --from=pgdocker-ext-builder /usr/local/lib/postgresql/pg_jsonschema* /usr/local/lib/postgresql/
-COPY --from=pgdocker-ext-builder /usr/local/share/postgresql/extension/pg_search* /usr/local/share/postgresql/extension/
 COPY --from=pgdocker-ext-builder /usr/local/share/postgresql/extension/pg_textsearch* /usr/local/share/postgresql/extension/
-COPY --from=pgdocker-ext-builder /usr/local/share/postgresql/extension/pg_jsonschema* /usr/local/share/postgresql/extension/
 
 # Initialize the data directory if not initialized
 #COPY init-db.sh /docker-entrypoint-initdb.d/init-db.sh
@@ -281,9 +250,21 @@ RUN chmod +x /docker-entrypoint-initdb.d/setup-python-env.sh
 # Use a volume for the data directory (PG19+ uses version-specific subdirectories)
 VOLUME /var/lib/postgresql
 
-# Copy custom config files into image
+# Copy custom config files into image. Alpine packages may leave
+# /etc/postgresql as a symlink to /etc/postgresql19, with the real directory
+# owned by uid/gid 70 and mode 750. The image remaps postgres to DOCKER_UID
+# above, so fix both possible paths explicitly instead of relying on recursive
+# chown/chmod symlink traversal semantics. Without this, 01-apply-config.sh
+# can't read custom.conf at container startup and the container exits on first
+# boot.
 COPY custom.conf /etc/postgresql/custom.conf
 COPY pg_hba.conf /etc/postgresql/pg_hba.conf
+RUN for dir in /etc/postgresql /etc/postgresql19; do \
+        if [ -e "$dir" ]; then \
+            chown -R postgres:postgres "$dir" && chmod 755 "$dir"; \
+        fi; \
+    done \
+    && chmod 644 /etc/postgresql/custom.conf /etc/postgresql/pg_hba.conf
 
 # Copy SSL certificate generation script
 COPY generate-ssl-certs.sh /usr/local/bin/generate-ssl-certs.sh
