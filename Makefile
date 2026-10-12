@@ -37,8 +37,7 @@ help:
 		'  make release-pg18 VERSION=v2.0.0     Create and push a specific PG18 release' \
 		'  make release-pg18vc                  Create and push the next PG18 VectorChord release' \
 		'  make release-pg18vc VERSION=v2.0.0   Create and push a specific PG18 VectorChord release' \
-		'  make release-pg19                    Create and push the next PG19 release' \
-		'  make release-pg19 VERSION=v1.0.1     Create and push a specific PG19 release' \
+		'  make release-pg19                    Disabled: TimescaleDB has no PG19 support' \
 		'  make release-pg19basic               Create and push the next PG19 Basic release' \
 		'  make release-pg19basic VERSION=v1.0.1 Create and push a specific PG19 Basic release'
 
@@ -129,7 +128,12 @@ release-pg18vc: validate-release-pg18vc
 	git push origin '$(PG18VC_RELEASE_TAG)'
 	@printf 'Released %s; the PG18 VectorChord GitHub workflow will build image tag %s.\n' '$(PG18VC_RELEASE_TAG)' '$(PG18VC_RELEASE_VERSION)'
 
-release-pg19: validate-release-pg19
+release-pg19:
+	@printf 'ERROR: PG19 full image is disabled (TimescaleDB has no PG19 support); use release-pg19basic\n' >&2
+	@exit 1
+
+# Original PG19 release recipe, kept for re-enabling (rename back to release-pg19).
+release-pg19-disabled: validate-release-pg19
 	@printf 'Creating release %s\n' '$(PG19_RELEASE_TAG)'
 	git tag -a '$(PG19_RELEASE_TAG)' -m 'Release $(PG19_RELEASE_TAG)'
 	git push origin '$(PG19_RELEASE_TAG)'

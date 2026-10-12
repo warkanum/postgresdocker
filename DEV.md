@@ -62,11 +62,7 @@ For PostgreSQL 18 VectorChord:
 make release-pg18vc
 ```
 
-For PostgreSQL 19:
-
-```bash
-make release-pg19
-```
+For PostgreSQL 19: **disabled**. `make release-pg19` exits with an error and the workflow is `.github/workflows/docker-pg19-za.yml.disabled`, because TimescaleDB has no PG19 support. To re-enable: rename the workflow back to `.yml`, delete the `release-pg19` guard in the root `Makefile` and rename `release-pg19-disabled` to `release-pg19`.
 
 For PostgreSQL 19 Basic:
 
@@ -92,7 +88,6 @@ Examples:
 make release-pg17 VERSION=v2.0.0
 make release-pg18 VERSION=v2.0.0
 make release-pg18vc VERSION=v2.0.0
-make release-pg19 VERSION=v2.0.0
 make release-pg19basic VERSION=v2.0.0
 ```
 
@@ -105,7 +100,7 @@ Pushing a release tag triggers the matching GitHub Actions workflow for that ima
 - `release-pg17` triggers the PostgreSQL 17 workflow and publishes the image using the matching version
 - `release-pg18` triggers the PostgreSQL 18 workflow and publishes the image using the matching version
 - `release-pg18vc` triggers the PostgreSQL 18 VectorChord workflow and publishes the image using the matching version
-- `release-pg19` triggers the PostgreSQL 19 workflow and publishes the image using the matching version
+- `release-pg19` is disabled (no workflow runs for `pg19-v*` tags)
 - `release-pg19basic` triggers the PostgreSQL 19 Basic workflow and publishes the image using the matching version
 
 ## Helpful Commands

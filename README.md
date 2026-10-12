@@ -19,7 +19,7 @@ The current focus is on modern PostgreSQL builds, especially:
 - [`docker_pg17_za`](./docker_pg17_za/README.md): PostgreSQL 17 image
 - [`docker_pg18_za`](./docker_pg18_za/README.md): stable PostgreSQL 18 image
 - [`docker_pg18_vectorchord`](./docker_pg18_vectorchord/README.md): PostgreSQL 18 image with VectorChord
-- [`docker_pg19_za`](./docker_pg19_za/README.md): PostgreSQL 19 image
+- [`docker_pg19_za`](./docker_pg19_za/README.md): PostgreSQL 19 image (**disabled**: TimescaleDB has no PG19 support yet)
 - [`docker_pg19_basic_za`](./docker_pg19_basic_za/README.md): PostgreSQL 19 image without complex extensions
 
 There are also older reference folders in the repo for historical or compatibility work:
@@ -109,6 +109,8 @@ Highlights:
 - Docker Hub publishing flow tied to Git tags
 
 ### PostgreSQL 19
+
+**Disabled.** The publish workflow is renamed to `.github/workflows/docker-pg19-za.yml.disabled` and `make release-pg19` refuses to tag, because upstream TimescaleDB rejects PostgreSQL > 18. Use [`docker_pg19_basic_za`](./docker_pg19_basic_za/README.md) until it is re-enabled.
 
 See:
 
