@@ -7,7 +7,7 @@ This PostgreSQL Docker container is configured with SSL/TLS support using a self
 - **Certificate Location**: `/var/lib/postgresql/data/ssl/server.crt`
 - **Private Key Location**: `/var/lib/postgresql/data/ssl/server.key`
 - **Certificate Validity**: 10 years
-- **Certificate Subject**: `/C=ZA/ST=Gauteng/L=Johannesburg/O=PostgreSQL/OU=Database/CN=pgsql19alpha.local`
+- **Certificate Subject**: `/C=ZA/ST=Gauteng/L=Johannesburg/O=PostgreSQL/OU=Database/CN=pgsql18vc.local`
 - **Minimum TLS Version**: TLSv1.2
 
 ## Connecting with SSL
@@ -72,7 +72,7 @@ To regenerate the SSL certificates:
 1. Connect to the running container:
 
    ```bash
-   docker exec -it pgsql19alpha bash
+   docker exec -it pgsql18vc bash
    ```
 
 2. Run the certificate generation script:

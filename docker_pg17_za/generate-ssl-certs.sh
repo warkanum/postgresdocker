@@ -18,7 +18,7 @@ mkdir -p "${SSL_DIR}"
 openssl req -new -x509 -days 3650 -nodes -text \
     -out "${CERT_FILE}" \
     -keyout "${KEY_FILE}" \
-    -subj "/C=ZA/ST=Gauteng/L=Johannesburg/O=PostgreSQL/OU=Database/CN=pgsql19alpha.local"
+    -subj "/C=ZA/ST=Gauteng/L=Johannesburg/O=PostgreSQL/OU=Database/CN=pgsql17.local"
 
 # Set proper permissions (PostgreSQL requires strict permissions on key file)
 chmod 600 "${KEY_FILE}"

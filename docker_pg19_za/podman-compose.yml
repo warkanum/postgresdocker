@@ -1,16 +1,17 @@
 version: '3.8'
 
 services:
-  postgresql19_za_alpha:
-    container_name: postgresql19_za_alpha
-    image: docker.io/warkanum/postgresql19_za_alpha
+  postgresql19_za:
+    container_name: postgresql19_za
+    image: warkanum/postgresql19_za
     build:
       context: .
       dockerfile: Dockerfile
+    user: "${DOCKER_UID}:${DOCKER_GID}"
     ports:
-      - "5403:5432"
+      - "5403:5435"
     volumes:
-      - /tmp/postgresql19_za_alpha_data:/var/lib/postgresql
+      - /tmp/postgresql19_za_data:/var/lib/postgresql/data
       - python_env:/opt/python_env
     env_file:
       - .env

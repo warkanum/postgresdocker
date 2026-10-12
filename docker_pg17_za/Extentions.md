@@ -1,6 +1,6 @@
 # PostgreSQL Extensions Reference
 
-This image ships with PostgreSQL 19 plus a broad set of contrib and third-party extensions for analytics, search, maintenance, geospatial work, and procedural logic.
+This image ships with PostgreSQL 17 plus a broad set of contrib and third-party extensions for analytics, search, maintenance, geospatial work, and procedural logic.
 
 ## Installed Extensions
 
@@ -41,7 +41,6 @@ The image installs `postgresql-contrib`, which provides many built-in PostgreSQL
 
 ## Good Defaults By Use Case
 
-- Search and AI: `vector`, `pg_search`, `pg_textsearch`, `pg_trgm`, `unaccent`
 - Geospatial: `postgis`, `postgis_topology`, `pgrouting`
 - Observability and tuning: `pg_stat_statements`, `pg_qualstats`, `pgstattuple`, `amcheck`
 - Scheduling and async work: `pg_cron`, `pg_background`

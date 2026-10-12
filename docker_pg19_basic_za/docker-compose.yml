@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  postgresql19_basic_za:
+    container_name: postgresql19_basic_za
+    image: docker.io/warkanum/postgresql19_basic_za
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5403:5432"
+    volumes:
+      - /tmp/postgresql19_basic_za_data:/var/lib/postgresql
+      - python_env:/opt/python_env
+    env_file:
+      - .env
+    restart: unless-stopped
+    shm_size: 8g
+    deploy:
+      resources:
+        limits:
+          memory: 10G
+          cpus: '4'
+
+volumes:
+  python_env:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Static regression checks for auto-generated SSL certificate handling.
 
-Both active image directories (PostgreSQL 18 and PostgreSQL 19 alpha) ship an
+Both active image directories (PostgreSQL 18 and 19) ship an
 ``01-apply-config.sh`` entrypoint that copies build-time self-signed
 certificates into the data directory at first boot. These checks pin the
 guarantees that keep ``ssl=on`` reliably loadable at runtime:
@@ -21,7 +21,8 @@ from pathlib import Path
 
 IMAGES = [
     Path(__file__).resolve().parents[2] / "docker_pg18_za",
-    Path(__file__).resolve().parents[2] / "docker_pg19_za_alpha",
+    Path(__file__).resolve().parents[2] / "docker_pg18_vectorchord",
+    Path(__file__).resolve().parents[2] / "docker_pg19_za",
 ]
 
 

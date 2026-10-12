@@ -16,8 +16,11 @@ This repository packages PostgreSQL images with:
 
 The current focus is on modern PostgreSQL builds, especially:
 
+- [`docker_pg17_za`](./docker_pg17_za/README.md): PostgreSQL 17 image
 - [`docker_pg18_za`](./docker_pg18_za/README.md): stable PostgreSQL 18 image
-- [`docker_pg19_za_alpha`](./docker_pg19_za_alpha/README.md): PostgreSQL 19 alpha image for preview and experimentation
+- [`docker_pg18_vectorchord`](./docker_pg18_vectorchord/README.md): PostgreSQL 18 image with VectorChord
+- [`docker_pg19_za`](./docker_pg19_za/README.md): PostgreSQL 19 image (**disabled**: TimescaleDB has no PG19 support yet)
+- [`docker_pg19_basic_za`](./docker_pg19_basic_za/README.md): PostgreSQL 19 image without complex extensions
 
 There are also older reference folders in the repo for historical or compatibility work:
 
@@ -53,8 +56,11 @@ Not everyone agrees, of course. Some of my colleagues still prefer avoiding Dock
 | [`README.md`](./README.md) | Top-level project guide |
 | [`DEV.md`](./DEV.md) | For the devs: release and maintainer workflow |
 | [`Makefile`](./Makefile) | Root release tagging helpers |
+| [`docker_pg17_za/`](./docker_pg17_za/README.md) | PostgreSQL 17 image, scripts, configs, compose files |
 | [`docker_pg18_za/`](./docker_pg18_za/README.md) | PostgreSQL 18 image, scripts, configs, compose files |
-| [`docker_pg19_za_alpha/`](./docker_pg19_za_alpha/README.md) | PostgreSQL 19 alpha image, scripts, configs, compose files |
+| [`docker_pg18_vectorchord/`](./docker_pg18_vectorchord/README.md) | PostgreSQL 18 image with VectorChord |
+| [`docker_pg19_za/`](./docker_pg19_za/README.md) | PostgreSQL 19 image, scripts, configs, compose files |
+| [`docker_pg19_basic_za/`](./docker_pg19_basic_za/README.md) | PostgreSQL 19 basic image (no TimescaleDB, pg_textsearch, PostGIS, pgRouting) |
 | `legacy/officialpg12/` | Older official PostgreSQL 12 reference materials |
 | `legacy/C8/` | CentOS 8-era assets and experiments |
 
@@ -70,6 +76,20 @@ Each image directory is largely self-contained, with its own:
 - image-specific README
 
 ## Image Variants
+
+### PostgreSQL 17
+
+See:
+
+- [`docker_pg17_za/README.md`](./docker_pg17_za/README.md)
+- [`docker_pg17_za/Extentions.md`](./docker_pg17_za/Extentions.md)
+- [`docker_pg17_za/SSL_README.md`](./docker_pg17_za/SSL_README.md)
+
+Highlights:
+
+- based on `postgres:17-alpine`
+- same extension set as PostgreSQL 18 (excluding VectorChord)
+- data mounted at `/var/lib/postgresql/data` (pre-PG18 `PGDATA` layout)
 
 ### PostgreSQL 18
 
@@ -88,17 +108,29 @@ Highlights:
 - extension-rich image for application, admin, analytics, and search use cases
 - Docker Hub publishing flow tied to Git tags
 
-### PostgreSQL 19 Alpha
+### PostgreSQL 19
 
-The PostgreSQL 19 alpha image exists for forward-looking testing.
+**Disabled.** The publish workflow is renamed to `.github/workflows/docker-pg19-za.yml.disabled` and `make release-pg19` refuses to tag, because upstream TimescaleDB rejects PostgreSQL > 18. Use [`docker_pg19_basic_za`](./docker_pg19_basic_za/README.md) until it is re-enabled.
 
 See:
 
-- [`docker_pg19_za_alpha/README.md`](./docker_pg19_za_alpha/README.md)
-- [`docker_pg19_za_alpha/Extentions.md`](./docker_pg19_za_alpha/Extentions.md)
-- [`docker_pg19_za_alpha/SSL_README.md`](./docker_pg19_za_alpha/SSL_README.md)
+- [`docker_pg19_za/README.md`](./docker_pg19_za/README.md)
+- [`docker_pg19_za/Extentions.md`](./docker_pg19_za/Extentions.md)
+- [`docker_pg19_za/SSL_README.md`](./docker_pg19_za/SSL_README.md)
 
-Use it when you want to validate compatibility or try upcoming PostgreSQL behavior. Do not confuse "alpha" with "the thing we should casually throw at production and hope the universe is feeling generous."
+### PostgreSQL 19 Basic
+
+See:
+
+- [`docker_pg19_basic_za/README.md`](./docker_pg19_basic_za/README.md)
+- [`docker_pg19_basic_za/Extentions.md`](./docker_pg19_basic_za/Extentions.md)
+
+Highlights:
+
+- same base as `docker_pg19_za`
+- excludes TimescaleDB (no PG19 support upstream), pg_textsearch (PG19 beta), PostGIS/postgis_topology and pgRouting (heavy builds)
+- release tags: `pg19basic-vX.Y.Z`
+
 
 ## Common Defaults
 
@@ -139,14 +171,15 @@ make run
 psql -h localhost -p 5432 -U admin -d root
 ```
 
-### Option 2: Work With PostgreSQL 19 Alpha
+### Option 2: Work With PostgreSQL 19
 
 ```bash
-cd docker_pg19_za_alpha
+cd docker_pg19_za
 make build
 make run
 psql -h localhost -p 5432 -U admin -d root
 ```
+
 
 ### Option 3: Use Compose
 
@@ -195,12 +228,14 @@ Useful targets in the image-level `Makefile` include:
 
 ## Data Persistence
 
-Persistent data is mounted from the host into `/var/lib/postgresql`.
+Persistent data is mounted from the host into `/var/lib/postgresql` (PG18+) or `/var/lib/postgresql/data` (PG17).
 
 Default host paths:
 
+- PostgreSQL 17: `/tmp/postgresql17_za_data` (mounted at `/var/lib/postgresql/data`)
 - PostgreSQL 18: `/tmp/postgresql18_za_data`
-- PostgreSQL 19 alpha: `/tmp/postgresql19_za_alpha_data`
+- PostgreSQL 19: `/tmp/postgresql19_za_data`
+- PostgreSQL 19 Basic: `/tmp/postgresql19_basic_za_data`
 
 The image-level `make run` target creates the data directory if needed and mounts it into the container. For modern PostgreSQL layouts used here, the versioned data directory typically ends up under:
 
@@ -222,7 +257,7 @@ If you are testing destructive initialization changes, use a disposable data dir
 The active images ship with a broad extension set. Depending on the image version, this includes tools such as:
 
 - `pgvector`
-- `vchord` / VectorChord in the PostgreSQL 18 image only
+- `vchord` / VectorChord in the `docker_pg18_vectorchord` image only
 - `postgis`
 - `pgrouting`
 - `timescaledb`
@@ -250,10 +285,12 @@ The active images ship with a broad extension set. Depending on the image versio
 
 For detailed extension notes, use the image-specific documentation:
 
+- [`docker_pg17_za/Extentions.md`](./docker_pg17_za/Extentions.md)
 - [`docker_pg18_za/Extentions.md`](./docker_pg18_za/Extentions.md)
-- [`docker_pg19_za_alpha/Extentions.md`](./docker_pg19_za_alpha/Extentions.md)
+- [`docker_pg19_za/Extentions.md`](./docker_pg19_za/Extentions.md)
+- [`docker_pg19_basic_za/Extentions.md`](./docker_pg19_basic_za/Extentions.md)
 
-Also worth noting: `plv8` is present in comments in the Dockerfiles but is not currently enabled in the built images. VectorChord is currently enabled for PostgreSQL 18 only; PostgreSQL 19 alpha remains unchanged until upstream VectorChord publishes or documents PostgreSQL 19-compatible release support.
+Also worth noting: `plv8` is present in comments in the Dockerfiles but is not currently enabled in the built images. VectorChord is only enabled in `docker_pg18_vectorchord`; PostgreSQL 19 stays without it until upstream VectorChord supports PostgreSQL 19.
 
 ## SSL
 
@@ -261,8 +298,8 @@ Both active image directories include SSL helper material and certificate-genera
 
 - [`docker_pg18_za/generate-ssl-certs.sh`](./docker_pg18_za/generate-ssl-certs.sh)
 - [`docker_pg18_za/SSL_README.md`](./docker_pg18_za/SSL_README.md)
-- [`docker_pg19_za_alpha/generate-ssl-certs.sh`](./docker_pg19_za_alpha/generate-ssl-certs.sh)
-- [`docker_pg19_za_alpha/SSL_README.md`](./docker_pg19_za_alpha/SSL_README.md)
+- [`docker_pg19_za/generate-ssl-certs.sh`](./docker_pg19_za/generate-ssl-certs.sh)
+- [`docker_pg19_za/SSL_README.md`](./docker_pg19_za/SSL_README.md)
 
 Read the image-specific SSL guide before assuming the certificates or trust model match your deployment requirements. Self-signed is fine for local or controlled use. It is less fine when auditors begin asking thoughtful questions.
 
@@ -270,8 +307,11 @@ Read the image-specific SSL guide before assuming the certificates or trust mode
 
 Published image names include:
 
+- `docker.io/warkanum/postgresql17_za`
 - `docker.io/warkanum/postgresql18_za`
-- `docker.io/warkanum/postgresql19_za_alpha`
+- `docker.io/warkanum/postgresql19_za`
+- `docker.io/warkanum/postgresql19_basic_za`
+- `docker.io/warkanum/postgresql18_vectorchord`
 
 Example pull:
 
@@ -288,7 +328,7 @@ The repo clearly intends to support both toolchains. Because of course one conta
 
 ## Notes And Caveats
 
-- The top-level release automation now covers both active image lines: PostgreSQL 18 and PostgreSQL 19 alpha.
+- The top-level release automation now covers all active image lines: PostgreSQL 17, PostgreSQL 18 (plus VectorChord) and PostgreSQL 19 (plus Basic).
 - Compose defaults and `make run` defaults are not identical; compose maps host port `5403`, while `make run` uses `5432` unless overridden.
 - The `legacy/` directory contains historical reference material rather than the mainline path for current releases.
 - The file `Extentions.md` is spelled that way in the repository. No, I am not thrilled either, but the documentation should match the actual path.
